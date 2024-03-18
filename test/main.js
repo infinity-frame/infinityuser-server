@@ -1,4 +1,4 @@
-const { initAuth, generateRefreshToken } = require("../src/main");
+const { initAuth, createUser } = require("../src/main");
 const mongoose = require("mongoose");
 
 const start = async () => {
@@ -13,6 +13,11 @@ const start = async () => {
     refreshTokenSecret: "refresh",
     db,
     enableLogs: true,
+  });
+
+  await createUser(auth, {
+    email: "voj.hab@proton.me",
+    password: "password123",
   });
 };
 

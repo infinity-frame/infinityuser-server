@@ -14,11 +14,7 @@ const start = async () => {
     db,
   });
 
-  const refreshToken = await generateRefreshToken(
-    "123",
-    auth.refreshTokenSecret,
-    db
-  );
+  const refreshToken = await generateRefreshToken(auth, "123");
 };
 
 start();

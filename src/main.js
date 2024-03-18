@@ -1,40 +1,46 @@
-const User = require("./models/user");
+const userSchema = require("./models/user");
 const refreshTokenSchema = require("./models/refreshToken");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 
 const initAuth = ({ accessTokenSecret, refreshTokenSecret, db }) => {
+  const User = db.model("User", userSchema);
+  const RefreshToken = db.model("RefreshToken", refreshTokenSchema);
+
   return {
-    accessTokenSecret,
-    refreshTokenSecret,
+    secrets: {
+      accessTokenSecret,
+      refreshTokenSecret,
+    },
+    models: {
+      User,
+      RefreshToken,
+    },
   };
 };
 
-const generateAccessToken = (id, accessTokenSecret) => {
+const generateAccessToken = (auth, uid) => {
   const payload = {
-    id,
+    uid,
   };
 
-  return jwt.sign(payload, accessTokenSecret, {
+  return jwt.sign(payload, auth.secrets.accessTokenSecret, {
     expiresIn: "10m",
   });
 };
 
-const generateRefreshToken = async (id, refreshTokenSecret, db) => {
+const generateRefreshToken = async (auth, uid) => {
   const payload = {
-    id,
+    uid,
   };
 
-  const token = jwt.sign(payload, refreshTokenSecret, {
+  const token = jwt.sign(payload, auth.secrets.refreshTokenSecret, {
     expiresIn: "8d",
   });
 
   console.log(token);
 
-  const RefreshToken = db.model("RefreshToken", refreshTokenSchema);
-
-  await RefreshToken.create({
-    userId: id,
+  await auth.models.RefreshToken.create({
     token,
   });
 

@@ -36,8 +36,6 @@ const generateRefreshToken = async (id, refreshTokenSecret, db) => {
   await RefreshToken.create({
     userId: id,
     token,
-    //expires in 20 seconds
-    expireAt: new Date(Date.now() + 20 * 1000),
   });
 
   console.log("token created");

@@ -12,9 +12,8 @@ const start = async () => {
     accessTokenSecret: "access",
     refreshTokenSecret: "refresh",
     db,
+    enableLogs: true,
   });
-
-  const refreshToken = await generateRefreshToken(auth, "123");
 };
 
 start();

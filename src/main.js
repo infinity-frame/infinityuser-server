@@ -3,9 +3,18 @@ const refreshTokenSchema = require("./models/refreshToken");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 
-const initAuth = ({ accessTokenSecret, refreshTokenSecret, db }) => {
+const initAuth = ({
+  accessTokenSecret,
+  refreshTokenSecret,
+  db,
+  enableLogs,
+}) => {
   const User = db.model("User", userSchema);
   const RefreshToken = db.model("RefreshToken", refreshTokenSchema);
+
+  if (enableLogs) {
+    console.log("Auth initialized");
+  }
 
   return {
     secrets: {
@@ -16,20 +25,37 @@ const initAuth = ({ accessTokenSecret, refreshTokenSecret, db }) => {
       User,
       RefreshToken,
     },
+    settings: {
+      enableLogs,
+    },
   };
 };
 
 const generateAccessToken = (auth, uid) => {
+  if (auth.settings.enableLogs) {
+    console.log(`Generating access token for user ${uid}`);
+  }
+
   const payload = {
     uid,
   };
 
-  return jwt.sign(payload, auth.secrets.accessTokenSecret, {
+  const token = jwt.sign(payload, auth.secrets.accessTokenSecret, {
     expiresIn: "10m",
   });
+
+  if (auth.settings.enableLogs) {
+    console.log(`Access token for user ${uid} created`);
+  }
+
+  return token;
 };
 
 const generateRefreshToken = async (auth, uid) => {
+  if (auth.settings.enableLogs) {
+    console.log(`Generating refresh token for user ${uid}`);
+  }
+
   const payload = {
     uid,
   };
@@ -38,13 +64,13 @@ const generateRefreshToken = async (auth, uid) => {
     expiresIn: "8d",
   });
 
-  console.log(token);
-
   await auth.models.RefreshToken.create({
     token,
   });
 
-  console.log("token created");
+  if (auth.settings.enableLogs) {
+    console.log(`Refresh token for user ${uid} created and saved to database`);
+  }
 
   return token;
 };

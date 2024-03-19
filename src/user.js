@@ -133,7 +133,7 @@ const login = async (auth, { email, password }) => {
 
 const logout = async (auth, refreshToken) => {
   if (auth.settings.enableLogs) {
-    console.log(`Logging out user with refresh token ${refreshToken}`);
+    console.log(`Logging out user`);
   }
 
   await verifyRefreshToken(auth, refreshToken);

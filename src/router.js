@@ -1,19 +1,12 @@
 const express = require("express");
 const router = express.Router();
 const { createUser, login, logout, deleteUser } = require("./user");
-const { verifyAccessToken, getNewTokens } = require("./tokens");
+const { getNewTokens } = require("./tokens");
+const { authMiddleware, passwordMiddleware } = require("./middlewares/auth");
 
 const authRouter = (auth) => {
   router.post("/register", async (req, res) => {
     const { email, password } = req.body;
-
-    if (!email || !password) {
-      res.status(400).json({
-        code: "auth/missing-credentials",
-        message: "Email and password are required",
-      });
-      return;
-    }
 
     try {
       const user = await createUser(auth, { email, password });
@@ -26,14 +19,6 @@ const authRouter = (auth) => {
   router.post("/login", async (req, res) => {
     const { email, password } = req.body;
 
-    if (!email || !password) {
-      res.status(400).json({
-        code: "auth/missing-credentials",
-        message: "Email and password are required",
-      });
-      return;
-    }
-
     try {
       const user = await login(auth, { email, password });
       res.status(200).json(user);
@@ -44,14 +29,6 @@ const authRouter = (auth) => {
 
   router.post("/logout", async (req, res) => {
     const { refreshToken } = req.body;
-
-    if (!refreshToken) {
-      res.status(400).json({
-        code: "auth/missing-refresh-token",
-        message: "Refresh token is required",
-      });
-      return;
-    }
 
     try {
       await logout(auth, refreshToken);
@@ -64,14 +41,6 @@ const authRouter = (auth) => {
   router.post("/refresh", async (req, res) => {
     const { refreshToken } = req.body;
 
-    if (!refreshToken) {
-      res.status(400).json({
-        code: "auth/missing-refresh-token",
-        message: "Refresh token is required",
-      });
-      return;
-    }
-
     try {
       const tokens = await getNewTokens(auth, refreshToken);
       res.status(200).json(tokens);
@@ -80,24 +49,19 @@ const authRouter = (auth) => {
     }
   });
 
-  router.delete("/delete", async (req, res) => {
-    const { password, userId } = req.body;
-
-    if (!userId || !password) {
-      res.status(400).json({
-        code: "auth/missing-credentials",
-        message: "Password and userId are required",
-      });
-      return;
+  router.delete(
+    "/delete",
+    authMiddleware(auth),
+    passwordMiddleware(auth),
+    async (req, res) => {
+      try {
+        await deleteUser(auth, req.user._id);
+        res.status(200).json({ message: "User deleted" });
+      } catch (error) {
+        res.status(error.status).json(error);
+      }
     }
-
-    try {
-      await deleteUser(auth, { password, userId });
-      res.status(200).json({ message: "User deleted" });
-    } catch (error) {
-      res.status(error.status).json(error);
-    }
-  });
+  );
 
   return router;
 };

@@ -5,10 +5,18 @@ const verifyAccessToken = async (auth, token) => {
     console.log("Verifying access token");
   }
 
+  if (!token) {
+    throw {
+      code: "auth/missing-credentials",
+      message: "Access token is required",
+      status: 400,
+    };
+  }
+
   try {
     const payload = await jwt.verify(token, auth.secrets.accessTokenSecret);
 
-    const userDoc = await auth.models.User.findById(payload.uid);
+    const userDoc = await auth.models.User.findById(payload.userId);
     if (!userDoc) {
       throw {
         code: "auth/user-not-found",
@@ -36,6 +44,14 @@ const verifyRefreshToken = async (auth, token) => {
     console.log("Verifying refresh token");
   }
 
+  if (!token) {
+    throw {
+      code: "auth/missing-credentials",
+      message: "Refresh token is required",
+      status: 400,
+    };
+  }
+
   try {
     const payload = await jwt.verify(token, auth.secrets.refreshTokenSecret);
 
@@ -49,7 +65,7 @@ const verifyRefreshToken = async (auth, token) => {
         };
       }
 
-      const userDoc = await auth.models.User.findById(payload.uid);
+      const userDoc = await auth.models.User.findById(payload.userId);
       if (!userDoc) {
         throw {
           code: "auth/user-not-found",
@@ -88,6 +104,18 @@ const verifyRefreshToken = async (auth, token) => {
 };
 
 const getNewTokens = async (auth, refreshToken) => {
+  if (auth.settings.enableLogs) {
+    console.log("Getting new tokens");
+  }
+
+  if (!refreshToken) {
+    throw {
+      code: "auth/missing-credentials",
+      message: "Refresh token is required",
+      status: 400,
+    };
+  }
+
   try {
     const userDoc = await verifyRefreshToken(auth, refreshToken);
     await auth.models.RefreshToken.deleteOne({ token: refreshToken });
@@ -104,13 +132,21 @@ const getNewTokens = async (auth, refreshToken) => {
   }
 };
 
-const generateAccessToken = async (auth, uid) => {
+const generateAccessToken = async (auth, userId) => {
   if (auth.settings.enableLogs) {
-    console.log(`Generating access token for user ${uid}`);
+    console.log(`Generating access token for user ${userId}`);
+  }
+
+  if (!userId) {
+    throw {
+      code: "auth/missing-credentials",
+      message: "User id is required",
+      status: 400,
+    };
   }
 
   const payload = {
-    uid,
+    userId,
   };
 
   const token = await jwt.sign(payload, auth.secrets.accessTokenSecret, {
@@ -118,19 +154,27 @@ const generateAccessToken = async (auth, uid) => {
   });
 
   if (auth.settings.enableLogs) {
-    console.log(`Access token for user ${uid} created`);
+    console.log(`Access token for user ${userId} created`);
   }
 
   return token;
 };
 
-const generateRefreshToken = async (auth, uid) => {
+const generateRefreshToken = async (auth, userId) => {
   if (auth.settings.enableLogs) {
-    console.log(`Generating refresh token for user ${uid}`);
+    console.log(`Generating refresh token for user ${userId}`);
+  }
+
+  if (!userId) {
+    throw {
+      code: "auth/missing-credentials",
+      message: "User id is required",
+      status: 400,
+    };
   }
 
   const payload = {
-    uid,
+    userId,
   };
 
   const token = await jwt.sign(payload, auth.secrets.refreshTokenSecret, {
@@ -139,13 +183,13 @@ const generateRefreshToken = async (auth, uid) => {
 
   try {
     await auth.models.RefreshToken.create({
-      userId: uid,
+      userId: userId,
       token,
     });
 
     if (auth.settings.enableLogs) {
       console.log(
-        `Refresh token for user ${uid} created and saved to database`
+        `Refresh token for user ${userId} created and saved to database`
       );
     }
   } catch (error) {

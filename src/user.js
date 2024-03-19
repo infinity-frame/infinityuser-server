@@ -149,38 +149,20 @@ const logout = async (auth, refreshToken) => {
   }
 };
 
-const deleteUser = async (auth, { password, userId }) => {
+const deleteUser = async (auth, userId) => {
   if (auth.settings.enableLogs) {
     console.log(`Deleting user with id ${userId}`);
   }
 
-  if (!password) {
+  if (!userId) {
     throw {
       code: "auth/missing-credentials",
-      message: "Password is required",
+      message: "User id is required",
       status: 400,
     };
   }
 
   try {
-    const userDoc = await auth.models.User.findById(userId);
-    if (!userDoc) {
-      throw {
-        code: "auth/user-not-found",
-        message: "User not found",
-        status: 404,
-      };
-    }
-
-    const passwordMatch = await bcrypt.compare(password, userDoc.passwordHash);
-    if (!passwordMatch) {
-      throw {
-        code: "auth/wrong-password",
-        message: "The password is invalid",
-        status: 401,
-      };
-    }
-
     await auth.models.User.deleteOne({ _id: userId });
     await auth.models.RefreshToken.deleteMany({ userId: userId });
 
@@ -196,4 +178,144 @@ const deleteUser = async (auth, { password, userId }) => {
   }
 };
 
-module.exports = { createUser, login, logout, deleteUser };
+const updateEmail = async (auth, { userId, newEmail }) => {
+  if (auth.settings.enableLogs) {
+    console.log(`Updating email for user with id ${userId}`);
+  }
+
+  if (!newEmail) {
+    throw {
+      code: "auth/missing-credentials",
+      message: "New email is required",
+      status: 400,
+    };
+  }
+
+  const emailRegex =
+    /(?:[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*|"(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21\x23-\x5b\x5d-\x7f]|\\[\x01-\x09\x0b\0c\x0e-\x7f])*")@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?|\[(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?|[a-z0-9-]*[a-z0-9]:(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21-\x5a\x53-\x7f]|\\[\x01-\x09\x0b\0c\x0e-\x7f])+)\])/;
+  if (!emailRegex.test(newEmail)) {
+    throw {
+      code: "auth/invalid-email",
+      message: "The email address is badly formatted",
+      status: 400,
+    };
+  }
+
+  try {
+    const userDoc = await auth.models.User.findByIdAndUpdate(
+      userId,
+      { email: newEmail },
+      { new: true }
+    );
+
+    if (!userDoc) {
+      throw {
+        code: "auth/user-not-found",
+        message: "User not found",
+        status: 404,
+      };
+    }
+
+    if (auth.settings.enableLogs) {
+      console.log(`Email for user with id ${userId} updated`);
+    }
+
+    return userDoc;
+  } catch (error) {
+    throw {
+      code: "auth/update-email-error",
+      message: "Failed to update email",
+      status: 500,
+    };
+  }
+};
+
+const isPasswordCorrect = async (auth, { userId, password, passwordHash }) => {
+  if (auth.settings.enableLogs) {
+    console.log(`Checking password for user with id ${userId}`);
+  }
+
+  if (!password || !userId) {
+    throw {
+      code: "auth/missing-credentials",
+      message: "User id and password are required",
+      status: 400,
+    };
+  }
+
+  if (!passwordHash) {
+    try {
+      if (!userDoc) {
+        userDoc = await getUser(auth, userId);
+      }
+
+      const passwordMatch = await bcrypt.compare(
+        password,
+        userDoc.passwordHash
+      );
+
+      if (auth.settings.enableLogs) {
+        console.log(`Password for user with id ${userId} is correct`);
+      }
+
+      return passwordMatch;
+    } catch (error) {
+      throw {
+        code: "auth/check-password-error",
+        message: "Failed to check password",
+        status: 500,
+      };
+    }
+  } else {
+    const passwordMatch = await bcrypt.compare(password, passwordHash);
+    return passwordMatch;
+  }
+};
+
+const getUser = async (auth, userId) => {
+  if (auth.settings.enableLogs) {
+    console.log(`Getting user with id ${userId}`);
+  }
+
+  if (!userId) {
+    throw {
+      code: "auth/missing-credentials",
+      message: "User id is required",
+      status: 400,
+    };
+  }
+
+  try {
+    const userDoc = await auth.models.User.findById(userId);
+
+    if (!userDoc) {
+      throw {
+        code: "auth/user-not-found",
+        message: "User not found",
+        status: 404,
+      };
+    }
+
+    if (auth.settings.enableLogs) {
+      console.log(`User with id ${userId} found`);
+    }
+
+    return userDoc;
+  } catch (error) {
+    throw {
+      code: "auth/get-user-error",
+      message: "Failed to get user",
+      status: 500,
+    };
+  }
+};
+
+module.exports = {
+  createUser,
+  login,
+  logout,
+  deleteUser,
+  updateEmail,
+  isPasswordCorrect,
+  getUser,
+};

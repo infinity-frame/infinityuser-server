@@ -1,8 +1,16 @@
 const userSchema = require("./models/user");
 const refreshTokenSchema = require("./models/refreshToken");
-const { createUser, login, logout, deleteUser } = require("./user");
+const {
+  createUser,
+  login,
+  logout,
+  deleteUser,
+  isPasswordCorrect,
+  getUser,
+} = require("./user");
 const { verifyAccessToken, getNewTokens } = require("./tokens");
 const authRouter = require("./router");
+const { authMiddleware, passwordMiddleware } = require("./middlewares/auth");
 
 const initAuth = ({
   accessTokenSecret,
@@ -40,5 +48,9 @@ module.exports = {
   login,
   logout,
   deleteUser,
+  isPasswordCorrect,
+  getUser,
   authRouter,
+  authMiddleware,
+  passwordMiddleware,
 };

@@ -1,5 +1,6 @@
 const bcrypt = require("bcrypt");
 const { generateAccessToken, generateRefreshToken } = require("./tokens");
+const { verify } = require("jsonwebtoken");
 
 const createUser = async (
   auth,
@@ -156,4 +157,22 @@ const login = async (auth, { email, password }) => {
   };
 };
 
-module.exports = { createUser };
+const logout = async (auth, refreshToken) => {
+  if (auth.settings.enableLogs) {
+    console.log(`Logging out user with refresh token ${refreshToken}`);
+  }
+
+  await verifyRefreshToken(auth, refreshToken);
+
+  try {
+    await auth.models.RefreshToken.deleteOne({ token: refreshToken });
+  } catch (error) {
+    throw {
+      code: "auth/delete-refresh-token-error",
+      message: "Failed to delete refresh token",
+      status: 500,
+    };
+  }
+};
+
+module.exports = { createUser, login, logout };

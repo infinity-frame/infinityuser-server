@@ -139,6 +139,7 @@ const generateRefreshToken = async (auth, uid) => {
 
   try {
     await auth.models.RefreshToken.create({
+      userId: uid,
       token,
     });
 

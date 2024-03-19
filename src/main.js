@@ -1,6 +1,6 @@
 const userSchema = require("./models/user");
 const refreshTokenSchema = require("./models/refreshToken");
-const { createUser, login, logout } = require("./user");
+const { createUser, login, logout, deleteUser } = require("./user");
 const { verifyAccessToken, getNewTokens } = require("./tokens");
 const authRouter = require("./router");
 
@@ -39,5 +39,6 @@ module.exports = {
   getNewTokens,
   login,
   logout,
+  deleteUser,
   authRouter,
 };

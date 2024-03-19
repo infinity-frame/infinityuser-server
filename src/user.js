@@ -149,4 +149,51 @@ const logout = async (auth, refreshToken) => {
   }
 };
 
-module.exports = { createUser, login, logout };
+const deleteUser = async (auth, { password, userId }) => {
+  if (auth.settings.enableLogs) {
+    console.log(`Deleting user with id ${userId}`);
+  }
+
+  if (!password) {
+    throw {
+      code: "auth/missing-credentials",
+      message: "Password is required",
+      status: 400,
+    };
+  }
+
+  try {
+    const userDoc = await auth.models.User.findById(userId);
+    if (!userDoc) {
+      throw {
+        code: "auth/user-not-found",
+        message: "User not found",
+        status: 404,
+      };
+    }
+
+    const passwordMatch = await bcrypt.compare(password, userDoc.passwordHash);
+    if (!passwordMatch) {
+      throw {
+        code: "auth/wrong-password",
+        message: "The password is invalid",
+        status: 401,
+      };
+    }
+
+    await auth.models.User.deleteOne({ _id: userId });
+    await auth.models.RefreshToken.deleteMany({ userId: userId });
+
+    if (auth.settings.enableLogs) {
+      console.log(`User with id ${userId} deleted`);
+    }
+  } catch (error) {
+    throw {
+      code: "auth/delete-user-error",
+      message: "Failed to delete user",
+      status: 500,
+    };
+  }
+};
+
+module.exports = { createUser, login, logout, deleteUser };

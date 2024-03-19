@@ -124,35 +124,68 @@ const verifyRefreshToken = async (auth, token) => {
   try {
     const payload = await jwt.verify(token, auth.secrets.refreshTokenSecret);
 
-    const tokenDoc = await auth.models.RefreshToken.findOne({ token });
-    if (!tokenDoc) {
+    try {
+      const tokenDoc = await auth.models.RefreshToken.findOne({ token });
+      if (!tokenDoc) {
+        throw {
+          code: "auth/invalid-refresh-token",
+          message: "Invalid refresh token",
+          status: 401,
+        };
+      }
+
+      const userDoc = await auth.models.User.findById(payload.uid);
+      if (!userDoc) {
+        throw {
+          code: "auth/user-not-found",
+          message: "User not found",
+          status: 404,
+        };
+      }
+
+      if (auth.settings.enableLogs) {
+        console.log("Refresh token verified");
+      }
+
+      return userDoc;
+    } catch (error) {
+      throw {
+        code: "auth/error-checking-refresh-token",
+        message: "Invalid refresh token",
+        status: 401,
+      };
+    }
+  } catch (error) {
+    if (error.name === "TokenExpiredError") {
+      throw {
+        code: "auth/refresh-token-expired",
+        message: "Refresh token expired, you need to reauthenticate",
+        status: 401,
+      };
+    } else {
       throw {
         code: "auth/invalid-refresh-token",
         message: "Invalid refresh token",
         status: 401,
       };
     }
+  }
+};
 
-    const userDoc = await auth.models.User.findById(payload.uid);
-    if (!userDoc) {
-      throw {
-        code: "auth/user-not-found",
-        message: "User not found",
-        status: 404,
-      };
-    }
+const getNewTokens = async (auth, refreshToken) => {
+  try {
+    const userDoc = await verifyRefreshToken(auth, refreshToken);
+    await auth.models.RefreshToken.deleteOne({ token: refreshToken });
 
-    if (auth.settings.enableLogs) {
-      console.log("Refresh token verified");
-    }
+    const accessToken = await generateAccessToken(auth, userDoc._id);
+    const newRefreshToken = await generateRefreshToken(auth, userDoc._id);
 
-    return userDoc;
-  } catch (error) {
-    throw {
-      code: "auth/invalid-refresh-token",
-      message: "Invalid refresh token",
-      status: 401,
+    return {
+      accessToken,
+      refreshToken: newRefreshToken,
     };
+  } catch (error) {
+    throw error;
   }
 };
 
@@ -233,7 +266,14 @@ const createUser = async (
       console.log(`User with email ${email} created`);
     }
 
-    return userDoc;
+    const accessToken = await generateAccessToken(auth, userDoc._id);
+    const refreshToken = await generateRefreshToken(auth, userDoc._id);
+
+    return {
+      user: userDoc,
+      accessToken,
+      refreshToken,
+    };
   } catch (error) {
     throw {
       code: "auth/create-user-error",
@@ -245,9 +285,7 @@ const createUser = async (
 
 module.exports = {
   initAuth,
-  generateAccessToken,
-  generateRefreshToken,
   createUser,
   verifyAccessToken,
-  verifyRefreshToken,
+  getNewTokens,
 };

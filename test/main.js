@@ -1,10 +1,8 @@
 const {
   initAuth,
-  generateAccessToken,
-  generateRefreshToken,
   createUser,
   verifyAccessToken,
-  verifyRefreshToken,
+  getNewTokens,
 } = require("../src/main");
 const mongoose = require("mongoose");
 
@@ -30,13 +28,14 @@ const start = async () => {
 
     console.log(user);
 
-    const accessToken = await generateAccessToken(auth, user._id);
-    const refreshToken = await generateRefreshToken(auth, user._id);
-    const decodedAccessToken = await verifyAccessToken(auth, accessToken);
-    const decodedRefreshToken = await verifyRefreshToken(auth, refreshToken);
-
+    const decodedAccessToken = await verifyAccessToken(auth, user.accessToken);
     console.log("Decoded access token:", decodedAccessToken);
-    console.log("Decoded refresh token:", decodedRefreshToken);
+
+    console.log("Waiting for 5 seconds...");
+    await new Promise((resolve) => setTimeout(resolve, 5000));
+
+    const newTokens = await getNewTokens(auth, user.refreshToken);
+    console.log("New tokens:", newTokens);
   } catch (error) {
     console.error(error);
   }

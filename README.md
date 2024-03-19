@@ -108,8 +108,8 @@ Now you can use the following routes:
 
 You can also use the individual functions in your own code. Here are the available functions:
 
-- `createUser(auth, { username, password })`
-- `login(auth, { username, password })`
+- `createUser(auth, { email, password, data })` - `data` is optional
+- `login(auth, { email, password })`
 - `verifyAccessToken(auth, accessToken)`
 - `getNewTokens(auth, refreshToken)`
 - `logout(auth, refreshToken)`

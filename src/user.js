@@ -5,10 +5,7 @@ const {
   verifyRefreshToken,
 } = require("./tokens");
 
-const createUser = async (
-  auth,
-  { email, password, username, displayName, data }
-) => {
+const createUser = async (auth, { email, password, data }) => {
   if (auth.settings.enableLogs) {
     console.log(`Creating user with email ${email}`);
   }
@@ -41,30 +38,6 @@ const createUser = async (
     };
   }
 
-  if (username) {
-    const usernameRegex = /^[a-zA-Z0-9_-]{3,20}$/;
-    if (!usernameRegex.test(username)) {
-      throw {
-        code: "auth/invalid-username",
-        message:
-          "Username should be 3-20 characters long and contain only alphanumeric characters, dashes and underscores",
-        status: 400,
-      };
-    }
-  }
-
-  if (displayName) {
-    const displayNameRegex = /^[a-zA-Z0-9_-\s]{3,50}$/;
-    if (!displayNameRegex.test(displayName)) {
-      throw {
-        code: "auth/invalid-display-name",
-        message:
-          "Display name should be 3-50 characters long and contain only alphanumeric characters, spaces, dashes and underscores",
-        status: 400,
-      };
-    }
-  }
-
   const salt = await bcrypt.genSalt();
   const hashedPassword = await bcrypt.hash(password, salt);
   let userDoc;
@@ -73,8 +46,6 @@ const createUser = async (
       email,
       passwordHash: hashedPassword,
       suspended: false,
-      username,
-      displayName,
       data,
     });
 

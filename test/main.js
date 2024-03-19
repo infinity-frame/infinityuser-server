@@ -15,10 +15,14 @@ const start = async () => {
     enableLogs: true,
   });
 
-  await createUser(auth, {
-    email: "voj.hab@proton.me",
-    password: "password123",
-  });
+  try {
+    await createUser(auth, {
+      email: "voj.habproton.me",
+      password: "password123",
+    });
+  } catch (error) {
+    console.error("Error creating user:", error);
+  }
 };
 
 start();

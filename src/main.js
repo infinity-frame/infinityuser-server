@@ -64,15 +64,26 @@ const generateRefreshToken = async (auth, uid) => {
     expiresIn: "8d",
   });
 
-  const tokenDoc = await auth.models.RefreshToken.create({
-    token,
-  });
+  try {
+    await auth.models.RefreshToken.create({
+      token,
+    });
 
-  if (auth.settings.enableLogs) {
-    console.log(`Refresh token for user ${uid} created and saved to database`);
+    if (auth.settings.enableLogs) {
+      console.log(
+        `Refresh token for user ${uid} created and saved to database`
+      );
+    }
+  } catch (error) {
+    console.error(`Error saving refresh token for user ${uid}:`, error);
+    throw {
+      code: "auth/save-refresh-token-error",
+      message: "Failed to save refresh token",
+      status: 500,
+    };
   }
 
-  return tokenDoc;
+  return token;
 };
 
 const createUser = async (
@@ -84,73 +95,88 @@ const createUser = async (
   }
 
   if (!email || !password) {
-    throw new Error("Email and password are required");
+    throw {
+      code: "auth/missing-credentials",
+      message: "Email and password are required",
+      status: 400,
+    };
   }
 
   const emailRegex =
     /(?:[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*|"(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21\x23-\x5b\x5d-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])*")@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?|\[(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?|[a-z0-9-]*[a-z0-9]:(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21-\x5a\x53-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])+)\])/;
   if (!emailRegex.test(email)) {
-    throw new Error({
+    throw {
       code: "auth/invalid-email",
-      message: "The email address is badly formatted.",
+      message: "The email address is badly formatted",
       status: 400,
-    });
+    };
   }
 
   const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,32}$/;
   if (!passwordRegex.test(password)) {
-    throw new Error({
+    throw {
       code: "auth/invalid-password",
       message:
         "Password should be 8-32 characters long and contain at least one letter and one number",
       status: 400,
-    });
+    };
   }
 
   if (username) {
     const usernameRegex = /^[a-zA-Z0-9_-]{3,20}$/;
     if (!usernameRegex.test(username)) {
-      throw new Error({
+      throw {
         code: "auth/invalid-username",
         message:
           "Username should be 3-20 characters long and contain only alphanumeric characters, dashes and underscores",
         status: 400,
-      });
+      };
     }
   }
 
   if (displayName) {
     const displayNameRegex = /^[a-zA-Z0-9_-\s]{3,50}$/;
     if (!displayNameRegex.test(displayName)) {
-      throw new Error({
+      throw {
         code: "auth/invalid-display-name",
         message:
           "Display name should be 3-50 characters long and contain only alphanumeric characters, spaces, dashes and underscores",
         status: 400,
-      });
+      };
     }
   }
 
-  const salt = await bcrypt.genSalt();
-  const hashedPassword = await bcrypt.hash(password, salt);
+  try {
+    const salt = await bcrypt.genSalt();
+    const hashedPassword = await bcrypt.hash(password, salt);
 
-  const user = await auth.models.User.create({
-    email,
-    passwordHash: hashedPassword,
-    suspended: false,
-    username,
-    displayName,
-    data,
-  });
+    const user = await auth.models.User.create({
+      email,
+      passwordHash: hashedPassword,
+      suspended: false,
+      username,
+      displayName,
+      data,
+    });
 
-  if (auth.settings.enableLogs) {
-    console.log(`User with email ${email} created`);
+    if (auth.settings.enableLogs) {
+      console.log(`User with email ${email} created`);
+    }
+
+    return user;
+  } catch (error) {
+    console.error(`Error creating user with email ${email}:`, error);
+    throw {
+      code: "auth/create-user-error",
+      message: "Failed to create user",
+      status: 500,
+    };
   }
-
-  return user;
 };
 
 module.exports = {
   initAuth,
+  generateAccessToken,
+  generateRefreshToken,
   createUser,
 };

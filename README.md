@@ -93,6 +93,17 @@ const start = async () => {
 start();
 ```
 
+Now you can use the following routes:
+
+- `POST /auth/register`
+  - Body: `{ email: "yourEmail", password: "yourPassword" }`
+- `POST /auth/login`
+  - Body: `{ email: "yourEmail", password: "yourPassword" }`
+- `POST /auth/refresh`
+  - Body: `{ refreshToken: "yourRefreshToken" }`
+- `POST /auth/logout`
+  - Body: `{ refreshToken: "yourRefreshToken" }`
+
 ### Individual functions
 
 You can also use the individual functions in your own code. Here are the available functions:

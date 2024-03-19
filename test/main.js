@@ -1,10 +1,7 @@
-const {
-  initAuth,
-  createUser,
-  verifyAccessToken,
-  getNewTokens,
-} = require("../src/main");
+const { initAuth, authRouter } = require("../src/main");
 const mongoose = require("mongoose");
+const express = require("express");
+const app = express();
 
 const start = async () => {
   await mongoose.connect(
@@ -20,25 +17,11 @@ const start = async () => {
     enableLogs: true,
   });
 
-  try {
-    const user = await createUser(auth, {
-      email: "example@example.com",
-      password: "password123",
-    });
+  app.use(express.json());
+  app.use("/auth", authRouter(auth));
 
-    console.log(user);
-
-    const decodedAccessToken = await verifyAccessToken(auth, user.accessToken);
-    console.log("Decoded access token:", decodedAccessToken);
-
-    console.log("Waiting for 5 seconds...");
-    await new Promise((resolve) => setTimeout(resolve, 5000));
-
-    const newTokens = await getNewTokens(auth, user.refreshToken);
-    console.log("New tokens:", newTokens);
-  } catch (error) {
-    console.error(error);
-  }
+  await app.listen(3000);
+  console.log("App listening on port 3000");
 };
 
 start();

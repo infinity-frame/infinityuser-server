@@ -1,6 +1,9 @@
 const bcrypt = require("bcrypt");
-const { generateAccessToken, generateRefreshToken } = require("./tokens");
-const { verify } = require("jsonwebtoken");
+const {
+  generateAccessToken,
+  generateRefreshToken,
+  verifyRefreshToken,
+} = require("./tokens");
 
 const createUser = async (
   auth,

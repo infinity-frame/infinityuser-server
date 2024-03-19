@@ -1,12 +1,7 @@
 const express = require("express");
 const router = express.Router();
-const {
-  createUser,
-  verifyAccessToken,
-  getNewTokens,
-  login,
-  logout,
-} = require("./main");
+const { createUser, login, logout } = require("./user");
+const { verifyAccessToken, getNewTokens } = require("./tokens");
 
 const authRouter = (auth) => {
   router.post("/register", async (req, res) => {
@@ -34,9 +29,17 @@ const authRouter = (auth) => {
   router.post("/logout", async (req, res) => {
     const { refreshToken } = req.body;
 
+    if (!refreshToken) {
+      res.status(400).json({
+        code: "auth/missing-refresh-token",
+        message: "Refresh token is required",
+      });
+      return;
+    }
+
     try {
       await logout(auth, refreshToken);
-      res.status(204).end();
+      res.status(200).json({ message: "User logged out" });
     } catch (error) {
       res.status(error.status).json(error);
     }

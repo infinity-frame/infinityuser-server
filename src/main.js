@@ -31,7 +31,7 @@ const initAuth = ({
   };
 };
 
-const generateAccessToken = (auth, uid) => {
+const generateAccessToken = async (auth, uid) => {
   if (auth.settings.enableLogs) {
     console.log(`Generating access token for user ${uid}`);
   }
@@ -40,7 +40,7 @@ const generateAccessToken = (auth, uid) => {
     uid,
   };
 
-  const token = jwt.sign(payload, auth.secrets.accessTokenSecret, {
+  const token = await jwt.sign(payload, auth.secrets.accessTokenSecret, {
     expiresIn: "10m",
   });
 
@@ -60,7 +60,7 @@ const generateRefreshToken = async (auth, uid) => {
     uid,
   };
 
-  const token = jwt.sign(payload, auth.secrets.refreshTokenSecret, {
+  const token = await jwt.sign(payload, auth.secrets.refreshTokenSecret, {
     expiresIn: "8d",
   });
 
@@ -75,7 +75,6 @@ const generateRefreshToken = async (auth, uid) => {
       );
     }
   } catch (error) {
-    console.error(`Error saving refresh token for user ${uid}:`, error);
     throw {
       code: "auth/save-refresh-token-error",
       message: "Failed to save refresh token",
@@ -84,6 +83,77 @@ const generateRefreshToken = async (auth, uid) => {
   }
 
   return token;
+};
+
+const verifyAccessToken = async (auth, token) => {
+  if (auth.settings.enableLogs) {
+    console.log("Verifying access token");
+  }
+
+  try {
+    const payload = await jwt.verify(token, auth.secrets.accessTokenSecret);
+
+    const userDoc = await auth.models.User.findById(payload.uid);
+    if (!userDoc) {
+      throw {
+        code: "auth/user-not-found",
+        message: "User not found",
+        status: 404,
+      };
+    }
+
+    if (auth.settings.enableLogs) {
+      console.log("Access token verified");
+    }
+
+    return userDoc;
+  } catch (error) {
+    throw {
+      code: "auth/invalid-access-token",
+      message: "Invalid access token",
+      status: 401,
+    };
+  }
+};
+
+const verifyRefreshToken = async (auth, token) => {
+  if (auth.settings.enableLogs) {
+    console.log("Verifying refresh token");
+  }
+
+  try {
+    const payload = await jwt.verify(token, auth.secrets.refreshTokenSecret);
+
+    const tokenDoc = await auth.models.RefreshToken.findOne({ token });
+    if (!tokenDoc) {
+      throw {
+        code: "auth/invalid-refresh-token",
+        message: "Invalid refresh token",
+        status: 401,
+      };
+    }
+
+    const userDoc = await auth.models.User.findById(payload.uid);
+    if (!userDoc) {
+      throw {
+        code: "auth/user-not-found",
+        message: "User not found",
+        status: 404,
+      };
+    }
+
+    if (auth.settings.enableLogs) {
+      console.log("Refresh token verified");
+    }
+
+    return userDoc;
+  } catch (error) {
+    throw {
+      code: "auth/invalid-refresh-token",
+      message: "Invalid refresh token",
+      status: 401,
+    };
+  }
 };
 
 const createUser = async (
@@ -150,7 +220,7 @@ const createUser = async (
     const salt = await bcrypt.genSalt();
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    const user = await auth.models.User.create({
+    const userDoc = await auth.models.User.create({
       email,
       passwordHash: hashedPassword,
       suspended: false,
@@ -163,9 +233,8 @@ const createUser = async (
       console.log(`User with email ${email} created`);
     }
 
-    return user;
+    return userDoc;
   } catch (error) {
-    console.error(`Error creating user with email ${email}:`, error);
     throw {
       code: "auth/create-user-error",
       message: "Failed to create user",
@@ -179,4 +248,6 @@ module.exports = {
   generateAccessToken,
   generateRefreshToken,
   createUser,
+  verifyAccessToken,
+  verifyRefreshToken,
 };

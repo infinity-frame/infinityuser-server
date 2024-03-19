@@ -1,8 +1,8 @@
 const userSchema = require("./models/user");
 const refreshTokenSchema = require("./models/refreshToken");
-
-const { createUser } = require("./user");
+const { createUser, login, logout } = require("./user");
 const { verifyAccessToken, getNewTokens } = require("./tokens");
+const authRouter = require("./router");
 
 const initAuth = ({
   accessTokenSecret,
@@ -37,4 +37,7 @@ module.exports = {
   createUser,
   verifyAccessToken,
   getNewTokens,
+  login,
+  logout,
+  authRouter,
 };

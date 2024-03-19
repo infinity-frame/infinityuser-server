@@ -11,19 +11,19 @@ Have you ever wanted to have a user system in your project but didn't want to sp
 
 ## Installation
 
-First you have to install (Node.js)[https://nodejs.org/en/]. Then you can install InfinityUser Admin using npm:
+First you have to install [Node.js](https://nodejs.org/en/). Then you can install InfinityUser Admin using npm:
 
 ```bash
 npm install infinityuser-admin
 ```
 
-Next, you will need to have (Mongoose)[https://mongoosejs.com/] installed. You can install it using npm:
+Next, you will need to have [Mongoose](https://mongoosejs.com/) installed. You can install it using npm:
 
 ```bash
 npm install mongoose
 ```
 
-You will alse need to set up the Mongoose connection. You can find more information on how to do that (here)[https://mongoosejs.com/docs/index.html].
+You will alse need to set up the Mongoose connection. You can find more information on how to do that [here](https://mongoosejs.com/docs/index.html).
 
 ## Usage
 
@@ -58,7 +58,7 @@ Now, you have two options. You can either use the `authRouter` which is an Expre
 
 ### authRouter
 
-First you will need to install (Express)[https://expressjs.com/]. You can install it using npm:
+First you will need to install [Express](https://expressjs.com/). You can install it using npm:
 
 ```bash
 npm install express

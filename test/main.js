@@ -2,13 +2,12 @@ const { initAuth, authRouter } = require("../src/main");
 const mongoose = require("mongoose");
 const express = require("express");
 const app = express();
+require("dotenv").config();
 
 const start = async () => {
-  await mongoose.connect(
-    "mongodb+srv://vojtech:ErXXh4xx3j7VewTI@maincluster.qqslnqr.mongodb.net/?retryWrites=true&w=majority&appName=MainCluster"
-  );
+  await mongoose.connect(process.env.DB_URI);
   const db = mongoose.connection;
-  console.log(`App connected to database ${db.db.databaseName}`);
+  console.log(`Connected to database ${db.db.databaseName}`);
 
   const auth = initAuth({
     accessTokenSecret: "access",

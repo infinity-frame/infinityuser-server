@@ -24,6 +24,13 @@ const verifyAccessToken = async (auth, token) => {
         status: 404,
       };
     }
+    if (userDoc.suspended) {
+      throw {
+        code: "auth/user-suspended",
+        message: "User is suspended",
+        status: 403,
+      };
+    }
 
     if (auth.settings.enableLogs) {
       console.log("Access token verified");
@@ -52,40 +59,9 @@ const verifyRefreshToken = async (auth, token) => {
     };
   }
 
+  let payload;
   try {
-    const payload = await jwt.verify(token, auth.secrets.refreshTokenSecret);
-
-    try {
-      const tokenDoc = await auth.models.RefreshToken.findOne({ token });
-      if (!tokenDoc) {
-        throw {
-          code: "auth/invalid-refresh-token",
-          message: "Invalid refresh token",
-          status: 401,
-        };
-      }
-
-      const userDoc = await auth.models.User.findById(payload.userId);
-      if (!userDoc) {
-        throw {
-          code: "auth/user-not-found",
-          message: "User not found",
-          status: 404,
-        };
-      }
-
-      if (auth.settings.enableLogs) {
-        console.log("Refresh token verified");
-      }
-
-      return userDoc;
-    } catch (error) {
-      throw {
-        code: "auth/error-checking-refresh-token",
-        message: "Invalid refresh token",
-        status: 401,
-      };
-    }
+    payload = await jwt.verify(token, auth.secrets.refreshTokenSecret);
   } catch (error) {
     if (error.name === "TokenExpiredError") {
       throw {
@@ -100,6 +76,49 @@ const verifyRefreshToken = async (auth, token) => {
         status: 401,
       };
     }
+  }
+
+  try {
+    const tokenDoc = await auth.models.RefreshToken.findOne({ token });
+    if (!tokenDoc) {
+      console.log(
+        "POSSIBLE REFRESH TOKEN INTERCEPTION FOR USER ID:",
+        payload.userId
+      );
+      throw {
+        code: "auth/invalid-refresh-token",
+        message: "Invalid refresh token",
+        status: 401,
+      };
+    }
+
+    const userDoc = await auth.models.User.findById(payload.userId);
+    if (!userDoc) {
+      throw {
+        code: "auth/user-not-found",
+        message: "User not found",
+        status: 404,
+      };
+    }
+    if (userDoc.suspended) {
+      throw {
+        code: "auth/user-suspended",
+        message: "User is suspended",
+        status: 403,
+      };
+    }
+
+    if (auth.settings.enableLogs) {
+      console.log("Refresh token verified");
+    }
+
+    return userDoc;
+  } catch (error) {
+    throw {
+      code: error.code || "auth/error-checking-refresh-token",
+      message: error.message || "Error checking refresh token",
+      status: error.status || 500,
+    };
   }
 };
 
@@ -124,6 +143,7 @@ const getNewTokens = async (auth, refreshToken) => {
     const newRefreshToken = await generateRefreshToken(auth, userDoc._id);
 
     return {
+      user: userDoc,
       accessToken,
       refreshToken: newRefreshToken,
     };

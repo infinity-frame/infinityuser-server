@@ -1,6 +1,12 @@
 const express = require("express");
 const router = express.Router();
-const { createUser, login, logout, deleteUser } = require("./user");
+const {
+  createUser,
+  login,
+  logout,
+  deleteUser,
+  updateEmail,
+} = require("./user");
 const { getNewTokens } = require("./tokens");
 const { authMiddleware, passwordMiddleware } = require("./middlewares/auth");
 
@@ -9,7 +15,7 @@ const authRouter = (auth) => {
     const { email, password } = req.body;
 
     try {
-      const user = await createUser(auth, { email, password });
+      const user = await createUser(auth, email, password);
       res.status(201).json(user);
     } catch (error) {
       res.status(error.status).json(error);
@@ -20,7 +26,7 @@ const authRouter = (auth) => {
     const { email, password } = req.body;
 
     try {
-      const user = await login(auth, { email, password });
+      const user = await login(auth, email, password);
       res.status(200).json(user);
     } catch (error) {
       res.status(error.status).json(error);
@@ -57,6 +63,22 @@ const authRouter = (auth) => {
       try {
         await deleteUser(auth, req.user._id);
         res.status(200).json({ message: "User deleted" });
+      } catch (error) {
+        res.status(error.status).json(error);
+      }
+    }
+  );
+
+  router.put(
+    "/email",
+    authMiddleware(auth),
+    passwordMiddleware(auth),
+    async (req, res) => {
+      const { email } = req.body;
+
+      try {
+        const user = await updateEmail(auth, req.user._id, email);
+        res.status(200).json(user);
       } catch (error) {
         res.status(error.status).json(error);
       }

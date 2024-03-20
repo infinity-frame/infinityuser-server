@@ -5,7 +5,7 @@ const {
   verifyRefreshToken,
 } = require("./tokens");
 
-const createUser = async (auth, { email, password, data }) => {
+const createUser = async (auth, email, password, data) => {
   if (auth.settings.enableLogs) {
     console.log(`Creating user with email ${email}`);
   }
@@ -78,7 +78,7 @@ const createUser = async (auth, { email, password, data }) => {
   };
 };
 
-const login = async (auth, { email, password }) => {
+const login = async (auth, email, password) => {
   if (auth.settings.enableLogs) {
     console.log(`Logging in user with email ${email}`);
   }
@@ -102,12 +102,18 @@ const login = async (auth, { email, password }) => {
   }
 
   const userDoc = await auth.models.User.findOne({ email });
-
   if (!userDoc) {
     throw {
       code: "auth/user-not-found",
       message: "User with this email does not exist",
       status: 404,
+    };
+  }
+  if (userDoc.suspended) {
+    throw {
+      code: "auth/user-suspended",
+      message: "User is suspended",
+      status: 403,
     };
   }
 
@@ -178,7 +184,7 @@ const deleteUser = async (auth, userId) => {
   }
 };
 
-const updateEmail = async (auth, { userId, newEmail }) => {
+const updateEmail = async (auth, userId, newEmail) => {
   if (auth.settings.enableLogs) {
     console.log(`Updating email for user with id ${userId}`);
   }
@@ -230,7 +236,7 @@ const updateEmail = async (auth, { userId, newEmail }) => {
   }
 };
 
-const isPasswordCorrect = async (auth, { userId, password, passwordHash }) => {
+const isPasswordCorrect = async (auth, userId, password, passwordHash) => {
   if (auth.settings.enableLogs) {
     console.log(`Checking password for user with id ${userId}`);
   }
@@ -303,9 +309,135 @@ const getUser = async (auth, userId) => {
     return userDoc;
   } catch (error) {
     throw {
-      code: "auth/get-user-error",
-      message: "Failed to get user",
-      status: 500,
+      code: error.code || "auth/get-user-error",
+      message: error.message || "Failed to get user",
+      status: error.status || 500,
+    };
+  }
+};
+
+const updateUser = async (auth, userId, data) => {
+  if (auth.settings.enableLogs) {
+    console.log(`Updating user with id ${userId}`);
+  }
+
+  if (!userId) {
+    throw {
+      code: "auth/missing-credentials",
+      message: "User id is required",
+      status: 400,
+    };
+  }
+
+  try {
+    const userDoc = await auth.models.User.findByIdAndUpdate(
+      userId,
+      { data },
+      { new: true }
+    );
+
+    if (!userDoc) {
+      throw {
+        code: "auth/user-not-found",
+        message: "User not found",
+        status: 404,
+      };
+    }
+
+    if (auth.settings.enableLogs) {
+      console.log(`User with id ${userId} updated`);
+    }
+
+    return userDoc;
+  } catch (error) {
+    throw {
+      code: error.code || "auth/update-user-error",
+      message: error.message || "Failed to update user",
+      status: error.status || 500,
+    };
+  }
+};
+
+const suspendUser = async (auth, userId) => {
+  if (auth.settings.enableLogs) {
+    console.log(`Suspending user with id ${userId}`);
+  }
+
+  if (!userId) {
+    throw {
+      code: "auth/missing-credentials",
+      message: "User id is required",
+      status: 400,
+    };
+  }
+
+  try {
+    const userDoc = await auth.models.User.findByIdAndUpdate(
+      userId,
+      { suspended: true },
+      { new: true }
+    );
+
+    if (!userDoc) {
+      throw {
+        code: "auth/user-not-found",
+        message: "User not found",
+        status: 404,
+      };
+    }
+
+    if (auth.settings.enableLogs) {
+      console.log(`User with id ${userId} suspended`);
+    }
+
+    return userDoc;
+  } catch (error) {
+    throw {
+      code: error.code || "auth/suspend-user-error",
+      message: error.message || "Failed to suspend user",
+      status: error.status || 500,
+    };
+  }
+};
+
+const unsuspendUser = async (auth, userId) => {
+  if (auth.settings.enableLogs) {
+    console.log(`Unsuspending user with id ${userId}`);
+  }
+
+  if (!userId) {
+    throw {
+      code: "auth/missing-credentials",
+      message: "User id is required",
+      status: 400,
+    };
+  }
+
+  try {
+    const userDoc = await auth.models.User.findByIdAndUpdate(
+      userId,
+      { suspended: false },
+      { new: true }
+    );
+
+    if (!userDoc) {
+      throw {
+        code: "auth/user-not-found",
+        message: "User not found",
+        status: 404,
+      };
+    }
+
+    if (auth.settings.enableLogs) {
+      console.log(`User with id ${userId} unsuspended`);
+    }
+
+    return userDoc;
+  } catch (error) {
+    throw {
+      code: error.code || "auth/unsuspend-user-error",
+      message: error.message || "Failed to unsuspend user",
+      status: error.status || 500,
     };
   }
 };
@@ -318,4 +450,7 @@ module.exports = {
   updateEmail,
   isPasswordCorrect,
   getUser,
+  updateUser,
+  suspendUser,
+  unsuspendUser,
 };

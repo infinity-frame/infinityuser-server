@@ -5,8 +5,12 @@ const {
   login,
   logout,
   deleteUser,
+  updateEmail,
   isPasswordCorrect,
   getUser,
+  updateUser,
+  suspendUser,
+  unsuspendUser,
 } = require("./user");
 const { verifyAccessToken, getNewTokens } = require("./tokens");
 const authRouter = require("./router");
@@ -53,4 +57,8 @@ module.exports = {
   authRouter,
   authMiddleware,
   passwordMiddleware,
+  updateEmail,
+  updateUser,
+  suspendUser,
+  unsuspendUser,
 };

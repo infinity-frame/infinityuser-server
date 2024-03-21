@@ -11,6 +11,7 @@ const {
   updateUser,
   suspendUser,
   unsuspendUser,
+  changePassword,
 } = require("./user");
 const { verifyAccessToken, getNewTokens } = require("./tokens");
 const authRouter = require("./router");
@@ -61,4 +62,5 @@ module.exports = {
   updateUser,
   suspendUser,
   unsuspendUser,
+  changePassword,
 };

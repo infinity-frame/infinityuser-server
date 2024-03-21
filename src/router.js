@@ -6,6 +6,7 @@ const {
   logout,
   deleteUser,
   updateEmail,
+  changePassword,
 } = require("./user");
 const { getNewTokens } = require("./tokens");
 const { authMiddleware, passwordMiddleware } = require("./middlewares/auth");
@@ -78,6 +79,22 @@ const authRouter = (auth) => {
 
       try {
         const user = await updateEmail(auth, req.user._id, email);
+        res.status(200).json(user);
+      } catch (error) {
+        res.status(error.status).json(error);
+      }
+    }
+  );
+
+  router.put(
+    "/password",
+    authMiddleware(auth),
+    passwordMiddleware(auth),
+    async (req, res) => {
+      const { newPassword } = req.body;
+
+      try {
+        const user = await changePassword(auth, req.user._id, newPassword);
         res.status(200).json(user);
       } catch (error) {
         res.status(error.status).json(error);

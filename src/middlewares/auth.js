@@ -34,11 +34,12 @@ const passwordMiddleware = (auth) => {
     }
 
     try {
-      const passwordMatch = await isPasswordCorrect(auth, {
-        userId: req.user._id,
+      const passwordMatch = await isPasswordCorrect(
+        auth,
+        req.user._id,
         password,
-        passwordHash: req.user.passwordHash,
-      });
+        req.user.passwordHash
+      );
 
       if (passwordMatch) {
         next();

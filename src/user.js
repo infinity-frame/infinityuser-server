@@ -442,6 +442,61 @@ const unsuspendUser = async (auth, userId) => {
   }
 };
 
+const changePassword = async (auth, userId, newPassword) => {
+  if (auth.settings.enableLogs) {
+    console.log(`Changing password for user with id ${userId}`);
+  }
+
+  if (!newPassword) {
+    throw {
+      code: "auth/missing-credentials",
+      message: "New password is required",
+      status: 400,
+    };
+  }
+
+  const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,32}$/;
+  if (!passwordRegex.test(newPassword)) {
+    throw {
+      code: "auth/invalid-password",
+      message:
+        "Password should be 8-32 characters long and contain at least one letter and one number",
+      status: 400,
+    };
+  }
+
+  const salt = await bcrypt.genSalt();
+  const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+  try {
+    const userDoc = await auth.models.User.findByIdAndUpdate(
+      userId,
+      { passwordHash: hashedPassword },
+      { new: true }
+    );
+
+    if (!userDoc) {
+      throw {
+        code: "auth/user-not-found",
+        message: "User not found",
+        status: 404,
+      };
+    }
+
+    if (auth.settings.enableLogs) {
+      console.log(`Password for user with id ${userId} changed`);
+    }
+
+    return userDoc;
+  } catch (error) {
+    throw {
+      code: error.code || "auth/change-password-error",
+      message: error.message || "Failed to change password",
+      status: error.status || 500,
+    };
+  }
+};
+
 module.exports = {
   createUser,
   login,
@@ -453,4 +508,5 @@ module.exports = {
   updateUser,
   suspendUser,
   unsuspendUser,
+  changePassword,
 };

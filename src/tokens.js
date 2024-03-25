@@ -170,7 +170,7 @@ const generateAccessToken = async (auth, userId) => {
   };
 
   const token = await jwt.sign(payload, auth.secrets.accessTokenSecret, {
-    expiresIn: "10m",
+    expiresIn: auth.settings.accessTokenExpiration,
   });
 
   if (auth.settings.enableLogs) {
@@ -198,7 +198,7 @@ const generateRefreshToken = async (auth, userId) => {
   };
 
   const token = await jwt.sign(payload, auth.secrets.refreshTokenSecret, {
-    expiresIn: "8d",
+    expiresIn: auth.settings.refreshTokenExpiration,
   });
 
   try {

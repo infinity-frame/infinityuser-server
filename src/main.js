@@ -1,5 +1,5 @@
-const userSchema = require("./models/user");
-const refreshTokenSchema = require("./models/refreshToken");
+const userSchema = require("./schemas/user");
+const refreshTokenSchema = require("./schemas/refreshToken");
 const {
   createUser,
   login,
@@ -21,7 +21,9 @@ const initAuth = ({
   accessTokenSecret,
   refreshTokenSecret,
   db,
-  enableLogs,
+  enableLogs = false,
+  refreshTokenExpiration = 8 * 24 * 60 * 60,
+  accessTokenExpiration = 15 * 60,
 }) => {
   const User = db.model("User", userSchema);
   const RefreshToken = db.model("RefreshToken", refreshTokenSchema);
@@ -42,6 +44,8 @@ const initAuth = ({
     },
     settings: {
       enableLogs,
+      refreshTokenExpiration,
+      accessTokenExpiration,
     },
   };
 };

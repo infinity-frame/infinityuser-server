@@ -316,7 +316,7 @@ const getUser = async (auth, userId) => {
   }
 };
 
-const updateUser = async (auth, userId, data) => {
+const updateUserData = async (auth, userId, data) => {
   if (auth.settings.enableLogs) {
     console.log(`Updating user with id ${userId}`);
   }
@@ -505,7 +505,7 @@ module.exports = {
   updateEmail,
   isPasswordCorrect,
   getUser,
-  updateUser,
+  updateUserData,
   suspendUser,
   unsuspendUser,
   changePassword,

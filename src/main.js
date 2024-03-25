@@ -8,7 +8,7 @@ const {
   updateEmail,
   isPasswordCorrect,
   getUser,
-  updateUser,
+  updateUserData,
   suspendUser,
   unsuspendUser,
   changePassword,
@@ -25,6 +25,7 @@ const initAuth = ({
 }) => {
   const User = db.model("User", userSchema);
   const RefreshToken = db.model("RefreshToken", refreshTokenSchema);
+  db.model();
 
   if (enableLogs) {
     console.log("Auth initialized");
@@ -59,7 +60,7 @@ module.exports = {
   authMiddleware,
   passwordMiddleware,
   updateEmail,
-  updateUser,
+  updateUserData,
   suspendUser,
   unsuspendUser,
   changePassword,

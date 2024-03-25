@@ -10,8 +10,8 @@ const start = async () => {
   console.log(`Connected to database ${db.db.databaseName}`);
 
   const auth = initAuth({
-    accessTokenSecret: "access",
     refreshTokenSecret: "refresh",
+    accessTokenSecret: "access",
     db,
     enableLogs: true,
   });

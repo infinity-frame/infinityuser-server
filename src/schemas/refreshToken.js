@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 
-const refreshTokenSchema = (auth) => {
+const refreshTokenSchema = (refreshTokenExpiration) => {
   const refreshTokenSchema = new mongoose.Schema({
     userId: {
       type: mongoose.Schema.Types.ObjectId,
@@ -10,7 +10,7 @@ const refreshTokenSchema = (auth) => {
     createdAt: {
       type: Date,
       default: Date.now,
-      expires: auth.settings.refreshTokenExpiration,
+      expires: refreshTokenExpiration,
     },
     token: {
       type: String,

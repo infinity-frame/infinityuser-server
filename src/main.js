@@ -16,6 +16,7 @@ const {
 const { verifyAccessToken, getNewTokens } = require("./tokens");
 const authRouter = require("./router");
 const { authMiddleware, passwordMiddleware } = require("./middlewares/auth");
+const { generateBase32Secret, generateTOTP, validateTOTP } = require("./otp");
 
 const initAuth = ({
   accessTokenSecret,
@@ -24,6 +25,7 @@ const initAuth = ({
   enableLogs = false,
   refreshTokenExpiration = 8 * 24 * 60 * 60,
   accessTokenExpiration = 15 * 60,
+  twofa = { keylength: 32, issuer, algorithm: "SHA256", window: 1 },
 }) => {
   const User = db.model("User", userSchema);
   const RefreshToken = db.model(
@@ -48,6 +50,7 @@ const initAuth = ({
       enableLogs,
       refreshTokenExpiration,
       accessTokenExpiration,
+      twofa,
     },
   };
 };
@@ -70,4 +73,7 @@ module.exports = {
   suspendUser,
   unsuspendUser,
   changePassword,
+  generateBase32Secret,
+  generateTOTP,
+  validateTOTP,
 };

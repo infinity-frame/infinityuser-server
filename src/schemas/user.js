@@ -20,6 +20,10 @@ const userSchema = new mongoose.Schema(
       of: String,
       required: false,
     },
+    totp: {
+      type: String,
+      required: false,
+    },
   },
   { timestamps: true }
 );

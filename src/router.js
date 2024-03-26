@@ -102,6 +102,10 @@ const authRouter = (auth) => {
     }
   );
 
+  if (auth.settings.twofa != null) {
+    router.post("/:userId/two-fa/generate-totp", function (req, res) {});
+  }
+
   return router;
 };
 

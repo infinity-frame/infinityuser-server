@@ -18,10 +18,11 @@ const generateTOTP = function (auth, label) {
     typeof auth.settings.twofa == "undefined" ||
     typeof label == "undefined"
   ) {
-    console.error(
-      "InfinityUser TOTP Error: twoFA object or label was not defined."
-    );
-    return;
+    throw {
+      code: "auth/totp/no-params",
+      message: "Auth object or label was not defined.",
+      status: 500,
+    };
   }
   const secret = generateBase32Secret(auth);
   if (auth.settings.enableLogs) {
@@ -44,10 +45,11 @@ const validateTOTP = function (auth, code, secret) {
     typeof code == "undefined" ||
     typeof secret == "undefined"
   ) {
-    console.error(
-      "InfinityUser TOTP Error: twoFA object, label or secret were undefined during validation."
-    );
-    return;
+    throw {
+      code: "auth/totp/no-params",
+      message: "Auth object, label or secret was not defined.",
+      status: 500,
+    };
   }
   if (auth.settings.enableLogs) {
     console.info(`Validating TOTP code ${code}`);

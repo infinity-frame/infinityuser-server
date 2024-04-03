@@ -1,6 +1,7 @@
 const { initAuth, authRouter } = require("../src/main");
 const mongoose = require("mongoose");
 const express = require("express");
+const { getUser } = require("../src/main.js");
 const app = express();
 require("dotenv").config();
 
@@ -9,12 +10,17 @@ const start = async () => {
   const db = mongoose.connection;
   console.log(`Connected to database ${db.db.databaseName}`);
 
-  const auth = initAuth({
-    refreshTokenSecret: "refresh",
-    accessTokenSecret: "access",
-    db,
-    enableLogs: true,
-  });
+  const auth = initAuth(
+    {
+      refreshTokenSecret: "refresh",
+      accessTokenSecret: "access",
+      db,
+      enableLogs: true,
+    },
+    {
+      issuer: "InfinityFrame",
+    }
+  );
 
   app.use(express.json());
   app.use("/auth", authRouter(auth));

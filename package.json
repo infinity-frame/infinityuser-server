@@ -4,7 +4,7 @@
   "description": "Simple user management system with JWT authentication",
   "main": "src/main.js",
   "scripts": {
-    "startTest": "cd test && node main.js",
+    "startTest": "cd test && nodemon main.js",
     "installTest": "cd test && npm install"
   },
   "keywords": [],
@@ -22,5 +22,8 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/infinity-frame/infinityuser-admin.git"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.0"
   }
 }

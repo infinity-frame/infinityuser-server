@@ -12,7 +12,8 @@ const {
 } = require("./user");
 const { getNewTokens } = require("./tokens");
 const { authMiddleware, passwordMiddleware } = require("./middlewares/auth");
-const { generateTOTP, validateTOTP } = require("./otp.js");
+const { generateTOTP, validateTOTP, removeTOTP } = require("./otp.js");
+const { getTwoFa } = require("./twofactor.js");
 
 const authRouter = (auth) => {
   router.post("/register", async (req, res) => {
@@ -106,9 +107,30 @@ const authRouter = (auth) => {
   );
 
   if (auth.settings.twofa != null) {
+    router.get("/two-fa/:userId", async function (req, res) {
+      try {
+        const twofa = await getTwoFa(auth, req.params.userId);
+        res.send(twofa);
+      } catch (err) {
+        if (typeof err.status == "undefined" || err.status == 500) {
+          res.status(500).json({
+            code: "internal-server-error",
+            message:
+              "An internal server error occured, please contact the administrators.",
+          });
+          console.error(err);
+        } else {
+          res.status(err.status).json(err);
+        }
+      }
+    });
     router.post("/two-fa/generate-totp/:userId", async function (req, res) {
       try {
-        const totp = await generateTOTP(auth, req.params.userId);
+        const totp = await generateTOTP(
+          auth,
+          req.params.userId,
+          req.body.identifier
+        );
         res.json({
           code: "generation-success",
           message: "TOTP generated successfully.",
@@ -152,6 +174,30 @@ const authRouter = (auth) => {
             message: "The provided TOTP code is invalid for this user.",
           });
         }
+      } catch (err) {
+        if (typeof err.status == "undefined" || err.status == 500) {
+          res.status(500).json({
+            code: "internal-server-error",
+            message:
+              "An internal server error occured, please contact the administrators.",
+          });
+          console.error(err);
+        } else {
+          res.status(err.status).json(err);
+        }
+      }
+    });
+    router.delete("/two-fa/remove-totp/:userId", async function (req, res) {
+      try {
+        const twofa = await removeTOTP(
+          auth,
+          req.params.userId,
+          req.body.identifier
+        );
+        res.json({
+          code: "totp-removed",
+          message: "TOTP has been removed successfully.",
+        });
       } catch (err) {
         if (typeof err.status == "undefined" || err.status == 500) {
           res.status(500).json({

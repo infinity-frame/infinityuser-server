@@ -21,10 +21,18 @@ const userSchema = new mongoose.Schema(
       required: false,
     },
     twofa: {
-      totp: {
-        type: Array,
-        required: false,
-      },
+      totp: [
+        {
+          identifier: {
+            required: true,
+            type: String,
+          },
+          secret: {
+            required: true,
+            type: String,
+          },
+        },
+      ],
     },
   },
   { timestamps: true }

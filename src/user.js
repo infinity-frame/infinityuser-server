@@ -71,8 +71,11 @@ const createUser = async (auth, email, password, data) => {
   const accessToken = await generateAccessToken(auth, userDoc._id);
   const refreshToken = await generateRefreshToken(auth, userDoc._id);
 
+  const userDocWithoutPassword = userDoc.toObject();
+  delete userDocWithoutPassword.passwordHash;
+
   return {
-    user: userDoc,
+    user: userDocWithoutPassword,
     accessToken,
     refreshToken,
   };
@@ -127,11 +130,11 @@ const login = async (auth, email, password) => {
     };
   }
 
-  const accessToken = await generateAccessToken(auth, userDoc._id);
-  const refreshToken = await generateRefreshToken(auth, userDoc._id);
+  const userDocWithoutPassword = userDoc.toObject();
+  delete userDocWithoutPassword.passwordHash;
 
   return {
-    user: userDoc,
+    user: userDocWithoutPassword,
     accessToken,
     refreshToken,
   };
@@ -212,7 +215,7 @@ const updateEmail = async (auth, userId, newEmail) => {
       userId,
       { email: newEmail },
       { new: true }
-    );
+    ).select("-passwordHash");
 
     if (!userDoc) {
       throw {
@@ -292,7 +295,9 @@ const getUser = async (auth, userId) => {
   }
 
   try {
-    const userDoc = await auth.models.User.findById(userId);
+    const userDoc = await auth.models.User.findById(userId).select(
+      "-passwordHash"
+    );
 
     if (!userDoc) {
       throw {
@@ -334,7 +339,7 @@ const updateUserData = async (auth, userId, data) => {
       userId,
       { data },
       { new: true }
-    );
+    ).select("-passwordHash");
 
     if (!userDoc) {
       throw {
@@ -376,7 +381,7 @@ const suspendUser = async (auth, userId) => {
       userId,
       { suspended: true },
       { new: true }
-    );
+    ).select("-passwordHash");
 
     if (!userDoc) {
       throw {
@@ -418,7 +423,7 @@ const unsuspendUser = async (auth, userId) => {
       userId,
       { suspended: false },
       { new: true }
-    );
+    ).select("-passwordHash");
 
     if (!userDoc) {
       throw {
@@ -473,7 +478,7 @@ const changePassword = async (auth, userId, newPassword) => {
       userId,
       { passwordHash: hashedPassword },
       { new: true }
-    );
+    ).select("-passwordHash");
 
     if (!userDoc) {
       throw {

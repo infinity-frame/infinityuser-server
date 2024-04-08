@@ -16,7 +16,9 @@ const verifyAccessToken = async (auth, token) => {
   try {
     const payload = await jwt.verify(token, auth.secrets.accessTokenSecret);
 
-    const userDoc = await auth.models.User.findById(payload.userId);
+    const userDoc = await auth.models.User.findById(payload.userId).select(
+      "-passwordHash"
+    );
     if (!userDoc) {
       throw {
         code: "auth/user-not-found",
@@ -92,7 +94,9 @@ const verifyRefreshToken = async (auth, token) => {
       };
     }
 
-    const userDoc = await auth.models.User.findById(payload.userId);
+    const userDoc = await auth.models.User.findById(payload.userId).select(
+      "-passwordHash"
+    );
     if (!userDoc) {
       throw {
         code: "auth/user-not-found",

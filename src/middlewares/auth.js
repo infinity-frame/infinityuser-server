@@ -1,5 +1,5 @@
 const { verifyAccessToken } = require("../tokens");
-const { isPasswordCorrect, getUser } = require("../user");
+const { isPasswordCorrect } = require("../user");
 
 const authMiddleware = (auth) => {
   return async (req, res, next) => {
@@ -37,8 +37,7 @@ const passwordMiddleware = (auth) => {
       const passwordMatch = await isPasswordCorrect(
         auth,
         req.user._id,
-        password,
-        req.user.passwordHash
+        password
       );
 
       if (passwordMatch) {

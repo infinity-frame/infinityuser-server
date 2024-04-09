@@ -1,4 +1,4 @@
-# InfinityUser Admin
+# InfinityUser server
 
 Have you ever wanted to have a user system in your project but didn't want to spend time creating it? InfinityUser Admin is the solution for you. It is a user system that is easy to use and easy to implement. It is also very customizable and has a lot of features.
 
@@ -14,7 +14,7 @@ Have you ever wanted to have a user system in your project but didn't want to sp
 First you have to install [Node.js](https://nodejs.org/en/). Then you can install InfinityUser Admin using npm:
 
 ```bash
-npm install infinityuser-admin
+npm install @infinity-frame/infinityuser-server
 ```
 
 Next, you will need to have [Mongoose](https://mongoosejs.com/) installed. You can install it using npm:
@@ -103,13 +103,26 @@ Now you can use the following routes:
   - Body: `{ refreshToken: "yourRefreshToken" }`
 - `POST /auth/logout`
   - Body: `{ refreshToken: "yourRefreshToken" }`
+- `DELETE /auth/delete`
+- `PUT /auth/email`
+  - Body: `{ email: "yourNewEmail" }`
+- `PUT /auth/password`
+  - Body: `{ password: "yourCurrentPassword", newPassword: "yourNewPassword" }`
 
 ### Individual functions
 
 You can also use the individual functions in your own code. Here are the available functions:
 
-- `createUser(auth, { email, password, data })` - `data` is optional
+- `createUser(auth,email, password, data)` - `data` is optional
 - `login(auth, { email, password })`
 - `verifyAccessToken(auth, accessToken)`
 - `getNewTokens(auth, refreshToken)`
 - `logout(auth, refreshToken)`
+- `deleteUser(auth, userId)`
+- `isPasswordCorrect(auth, userId, password)`
+- `getUser(auth, userId)`
+- `updateEmail(auth, userId, newEmail)`
+- `changePassword(auth, userId, newPassword)`
+- `updateUserData(auth, userId, data)`
+- `suspendUser(auth, userId)`
+- `unsuspendUser(auth, userId)`

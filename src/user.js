@@ -71,8 +71,11 @@ const createUser = async (auth, email, password, data) => {
   const accessToken = await generateAccessToken(auth, userDoc._id);
   const refreshToken = await generateRefreshToken(auth, userDoc._id);
 
+  const userDocWithoutPassword = userDoc.toObject();
+  delete userDocWithoutPassword.passwordHash;
+
   return {
-    user: userDoc,
+    user: userDocWithoutPassword,
     accessToken,
     refreshToken,
   };
@@ -101,40 +104,51 @@ const login = async (auth, email, password) => {
     };
   }
 
-  const userDoc = await auth.models.User.findOne({ email });
-  if (!userDoc) {
+  try {
+    const userDoc = await auth.models.User.findOne({ email });
+    if (!userDoc) {
+      throw {
+        code: "auth/user-not-found",
+        message: "User with this email does not exist",
+        status: 404,
+      };
+    }
+    if (userDoc.suspended) {
+      throw {
+        code: "auth/user-suspended",
+        message: "User is suspended",
+        status: 403,
+      };
+    }
+
+    const passwordMatch = await bcrypt.compare(password, userDoc.passwordHash);
+
+    if (!passwordMatch) {
+      throw {
+        code: "auth/wrong-password",
+        message: "The password is invalid",
+        status: 401,
+      };
+    }
+
+    const userDocWithoutPassword = userDoc.toObject();
+    delete userDocWithoutPassword.passwordHash;
+
+    const accessToken = await generateAccessToken(auth, userDoc._id);
+    const refreshToken = await generateRefreshToken(auth, userDoc._id);
+
+    return {
+      user: userDocWithoutPassword,
+      accessToken,
+      refreshToken,
+    };
+  } catch (error) {
     throw {
-      code: "auth/user-not-found",
-      message: "User with this email does not exist",
-      status: 404,
+      code: "auth/login-error",
+      message: "Failed to login",
+      status: 500,
     };
   }
-  if (userDoc.suspended) {
-    throw {
-      code: "auth/user-suspended",
-      message: "User is suspended",
-      status: 403,
-    };
-  }
-
-  const passwordMatch = await bcrypt.compare(password, userDoc.passwordHash);
-
-  if (!passwordMatch) {
-    throw {
-      code: "auth/wrong-password",
-      message: "The password is invalid",
-      status: 401,
-    };
-  }
-
-  const accessToken = await generateAccessToken(auth, userDoc._id);
-  const refreshToken = await generateRefreshToken(auth, userDoc._id);
-
-  return {
-    user: userDoc,
-    accessToken,
-    refreshToken,
-  };
 };
 
 const logout = async (auth, refreshToken) => {
@@ -212,7 +226,7 @@ const updateEmail = async (auth, userId, newEmail) => {
       userId,
       { email: newEmail },
       { new: true }
-    );
+    ).select("-passwordHash");
 
     if (!userDoc) {
       throw {
@@ -236,7 +250,7 @@ const updateEmail = async (auth, userId, newEmail) => {
   }
 };
 
-const isPasswordCorrect = async (auth, userId, password, passwordHash) => {
+const isPasswordCorrect = async (auth, userId, password) => {
   if (auth.settings.enableLogs) {
     console.log(`Checking password for user with id ${userId}`);
   }
@@ -249,32 +263,25 @@ const isPasswordCorrect = async (auth, userId, password, passwordHash) => {
     };
   }
 
-  if (!passwordHash) {
-    try {
-      if (!userDoc) {
-        userDoc = await getUser(auth, userId);
-      }
+  try {
+    const userDoc = await auth.models.User.findById(userId);
 
-      const passwordMatch = await bcrypt.compare(
-        password,
-        userDoc.passwordHash
-      );
-
-      if (auth.settings.enableLogs) {
-        console.log(`Password for user with id ${userId} is correct`);
-      }
-
-      return passwordMatch;
-    } catch (error) {
+    if (!userDoc) {
       throw {
-        code: "auth/check-password-error",
-        message: "Failed to check password",
-        status: 500,
+        code: "auth/user-not-found",
+        message: "User not found",
+        status: 404,
       };
     }
-  } else {
-    const passwordMatch = await bcrypt.compare(password, passwordHash);
+
+    const passwordMatch = await bcrypt.compare(password, userDoc.passwordHash);
     return passwordMatch;
+  } catch (error) {
+    throw {
+      code: "auth/check-password-error",
+      message: "Failed to check password",
+      status: 500,
+    };
   }
 };
 
@@ -292,7 +299,9 @@ const getUser = async (auth, userId) => {
   }
 
   try {
-    const userDoc = await auth.models.User.findById(userId);
+    const userDoc = await auth.models.User.findById(userId).select(
+      "-passwordHash"
+    );
 
     if (!userDoc) {
       throw {
@@ -334,7 +343,7 @@ const updateUserData = async (auth, userId, data) => {
       userId,
       { data },
       { new: true }
-    );
+    ).select("-passwordHash");
 
     if (!userDoc) {
       throw {
@@ -376,7 +385,7 @@ const suspendUser = async (auth, userId) => {
       userId,
       { suspended: true },
       { new: true }
-    );
+    ).select("-passwordHash");
 
     if (!userDoc) {
       throw {
@@ -418,7 +427,7 @@ const unsuspendUser = async (auth, userId) => {
       userId,
       { suspended: false },
       { new: true }
-    );
+    ).select("-passwordHash");
 
     if (!userDoc) {
       throw {
@@ -473,7 +482,7 @@ const changePassword = async (auth, userId, newPassword) => {
       userId,
       { passwordHash: hashedPassword },
       { new: true }
-    );
+    ).select("-passwordHash");
 
     if (!userDoc) {
       throw {

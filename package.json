@@ -1,6 +1,6 @@
 {
-  "name": "infinityuser-admin",
-  "version": "1.1.0",
+  "name": "@infinity-frame/infinityuser-server",
+  "version": "1.2.0",
   "description": "Simple user management system with JWT authentication",
   "main": "src/main.js",
   "scripts": {
@@ -25,5 +25,7 @@
   },
   "devDependencies": {
     "nodemon": "^3.1.0"
+  "publishConfig": {
+    "access": "public"
   }
 }

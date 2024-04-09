@@ -146,8 +146,18 @@ const getNewTokens = async (auth, refreshToken) => {
     const accessToken = await generateAccessToken(auth, userDoc._id);
     const newRefreshToken = await generateRefreshToken(auth, userDoc._id);
 
+    const userDocSafe = userDoc.toObject();
+
+    if (userDocSafe.twofa) {
+      if (userDocSafe.twofa.totp) {
+        for (const authenticator of userDocSafe.twofa.totp) {
+          delete authenticator.secret;
+        }
+      }
+    }
+
     return {
-      user: userDoc,
+      user: userDocSafe,
       accessToken,
       refreshToken: newRefreshToken,
     };
@@ -227,10 +237,111 @@ const generateRefreshToken = async (auth, userId) => {
   return token;
 };
 
+const createNewTempToken = async function (auth, userId, totp) {
+  if (!auth.secrets.tempTokenSecret) {
+    throw {
+      code: "auth/two-fa/missing-temporary-secret-key",
+      message: "Missing tempSecretKey.",
+      status: 500,
+    };
+  }
+
+  if (auth.settings.enableLogs) {
+    console.log(`Generating temporary token for user ${userId}`);
+  }
+
+  if (!userId) {
+    throw {
+      code: "auth/missing-credentials",
+      message: "User id is required",
+      status: 400,
+    };
+  }
+
+  const payload = {
+    userId,
+  };
+
+  const token = await jwt.sign(payload, auth.secrets.tempTokenSecret, {
+    expiresIn: auth.settings.tempTokenExpiration || "10m",
+  });
+
+  if (auth.settings.enableLogs) {
+    console.log(`Temporary token for user ${userId} created.`);
+  }
+
+  return token;
+};
+
+const verifyTempToken = async (auth, token) => {
+  if (auth.settings.enableLogs) {
+    console.log("Verifying temporary token");
+  }
+
+  if (!token) {
+    throw {
+      code: "auth/missing-credentials",
+      message: "Temporary token is required",
+      status: 400,
+    };
+  }
+
+  try {
+    const payload = await jwt.verify(token, auth.secrets.tempTokenSecret);
+
+    const userDoc = await auth.models.User.findById(
+      payload.userId,
+      "twofa suspended"
+    );
+    if (!userDoc) {
+      throw {
+        code: "auth/user-not-found",
+        message: "User not found",
+        status: 404,
+      };
+    }
+    if (!userDoc.twofa) {
+      throw {
+        code: "auth/twofa-disabled",
+        message: "User has two-fa disabled",
+        status: 400,
+      };
+    }
+    if (userDoc.suspended) {
+      throw {
+        code: "auth/user-suspended",
+        message: "User is suspended",
+        status: 403,
+      };
+    }
+
+    if (auth.settings.enableLogs) {
+      console.log("Temporary token verified");
+    }
+
+    const userDocSafe = userDoc.toObject();
+    if (userDocSafe.twofa.totp) {
+      for (const authenticator of userDocSafe.twofa.totp) {
+        delete authenticator.secret;
+      }
+    }
+
+    return { _id: userDocSafe._id, twofa: userDocSafe.twofa };
+  } catch (error) {
+    throw {
+      code: "auth/invalid-temp-token",
+      message: "Invalid temporary token",
+      status: 401,
+    };
+  }
+};
+
 module.exports = {
   verifyAccessToken,
   verifyRefreshToken,
   getNewTokens,
   generateAccessToken,
   generateRefreshToken,
+  createNewTempToken,
+  verifyTempToken,
 };

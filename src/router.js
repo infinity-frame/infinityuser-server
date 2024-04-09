@@ -10,8 +10,16 @@ const {
   getUser,
   updateUserData,
 } = require("./user");
-const { getNewTokens } = require("./tokens");
-const { authMiddleware, passwordMiddleware } = require("./middlewares/auth");
+const {
+  getNewTokens,
+  generateAccessToken,
+  generateRefreshToken,
+} = require("./tokens");
+const {
+  authMiddleware,
+  passwordMiddleware,
+  tempAuthMiddleware,
+} = require("./middlewares/auth");
 const { generateTOTP, validateTOTP, removeTOTP } = require("./otp.js");
 const { getTwoFa } = require("./twofactor.js");
 
@@ -107,23 +115,58 @@ const authRouter = (auth) => {
   );
 
   if (auth.settings.twofa != null) {
-    router.get("/two-fa/:userId", async function (req, res) {
-      try {
-        const twofa = await getTwoFa(auth, req.params.userId);
-        res.send(twofa);
-      } catch (err) {
-        if (typeof err.status == "undefined" || err.status == 500) {
-          res.status(500).json({
-            code: "internal-server-error",
-            message:
-              "An internal server error occured, please contact the administrators.",
-          });
-          console.error(err);
-        } else {
-          res.status(err.status).json(err);
+    router.post(
+      "/two-fa/verify/:method",
+      tempAuthMiddleware(auth),
+      async function (req, res) {
+        try {
+          if (req.params.method == "totp") {
+            if (!req.body.code) {
+              res.status(400).json({
+                code: "auth/missing-totp-code",
+                message: "Missing the TOTP code to validate.",
+              });
+              return;
+            }
+            const totp = await validateTOTP(auth, req.body.code, req.user._id);
+            if (totp) {
+              const accessToken = await generateAccessToken(auth, req.user._id);
+              const refreshToken = await generateRefreshToken(
+                auth,
+                req.user._id
+              );
+              res.json({
+                user: { _id: req.user._id },
+                accessToken,
+                refreshToken,
+              });
+            } else {
+              res.status(403).json({
+                code: "invalid-totp",
+                message: "The provided TOTP code is invalid for this user.",
+              });
+            }
+          } else {
+            res.status(400).json({
+              code: "invalid-method",
+              message:
+                "The provided method of two factor authentication was invalid.",
+            });
+          }
+        } catch (err) {
+          if (typeof err.status == "undefined" || err.status == 500) {
+            res.status(500).json({
+              code: "internal-server-error",
+              message:
+                "An internal server error occured, please contact the administrators.",
+            });
+            console.error(err);
+          } else {
+            res.status(err.status).json(err);
+          }
         }
       }
-    });
+    );
     router.post(
       "/two-fa/totp",
       authMiddleware(auth),
@@ -139,44 +182,6 @@ const authRouter = (auth) => {
             message: "TOTP generated successfully.",
             url: totp.url,
           });
-        } catch (err) {
-          if (typeof err.status == "undefined" || err.status == 500) {
-            res.status(500).json({
-              code: "internal-server-error",
-              message:
-                "An internal server error occured, please contact the administrators.",
-            });
-            console.error(err);
-          } else {
-            res.status(err.status).json(err);
-          }
-        }
-      }
-    );
-    router.patch(
-      "/two-fa/totp/:code",
-      authMiddleware(auth),
-      async function (req, res) {
-        if (!req.params.code) {
-          res.status(400).json({
-            code: "auth/missing-totp-code",
-            message: "Missing the TOTP code to validate.",
-          });
-          return;
-        }
-        try {
-          const totp = await validateTOTP(auth, req.params.code, req.user._id);
-          if (totp) {
-            res.json({
-              code: "validation-success",
-              message: "TOTP code is valid.",
-            });
-          } else {
-            res.status(403).json({
-              code: "invalid-totp",
-              message: "The provided TOTP code is invalid for this user.",
-            });
-          }
         } catch (err) {
           if (typeof err.status == "undefined" || err.status == 500) {
             res.status(500).json({

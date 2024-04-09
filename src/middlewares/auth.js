@@ -1,4 +1,4 @@
-const { verifyAccessToken } = require("../tokens");
+const { verifyAccessToken, verifyTempToken } = require("../tokens");
 const { isPasswordCorrect } = require("../user");
 
 const authMiddleware = (auth) => {
@@ -53,7 +53,28 @@ const passwordMiddleware = (auth) => {
   };
 };
 
+const tempAuthMiddleware = function (auth) {
+  return async function (req, res, next) {
+    const authHeader = req.headers.authorization;
+    const tempToken = authHeader.split(" ")[1];
+
+    if (!tempToken) {
+      res.status(401).json({ message: "Missing temporary token" });
+      return;
+    }
+
+    try {
+      const user = await verifyTempToken(auth, tempToken);
+      req.user = user;
+      next();
+    } catch (err) {
+      res.status(err.status).json(err);
+    }
+  };
+};
+
 module.exports = {
   authMiddleware,
   passwordMiddleware,
+  tempAuthMiddleware,
 };

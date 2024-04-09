@@ -3,6 +3,7 @@ const {
   generateAccessToken,
   generateRefreshToken,
   verifyRefreshToken,
+  createNewTempToken,
 } = require("./tokens");
 
 const createUser = async (auth, email, password, data) => {
@@ -47,6 +48,7 @@ const createUser = async (auth, email, password, data) => {
       passwordHash: hashedPassword,
       suspended: false,
       data,
+      twofa: null,
     });
 
     if (auth.settings.enableLogs) {
@@ -134,14 +136,28 @@ const login = async (auth, email, password) => {
     const userDocWithoutPassword = userDoc.toObject();
     delete userDocWithoutPassword.passwordHash;
 
-    const accessToken = await generateAccessToken(auth, userDoc._id);
-    const refreshToken = await generateRefreshToken(auth, userDoc._id);
+    if (userDocWithoutPassword.twofa) {
+      if (userDocWithoutPassword.twofa.totp) {
+        for (const authenticator of userDocWithoutPassword.twofa.totp) {
+          delete authenticator.secret;
+        }
+      }
+      const temptoken = await createNewTempToken(
+        auth,
+        userDoc._id,
+        userDocWithoutPassword.twofa.totp
+      );
+      return { user: userDocWithoutPassword, temptoken };
+    } else {
+      const accessToken = await generateAccessToken(auth, userDoc._id);
+      const refreshToken = await generateRefreshToken(auth, userDoc._id);
 
-    return {
-      user: userDocWithoutPassword,
-      accessToken,
-      refreshToken,
-    };
+      return {
+        user: userDocWithoutPassword,
+        accessToken,
+        refreshToken,
+      };
+    }
   } catch (error) {
     throw {
       code: "auth/login-error",

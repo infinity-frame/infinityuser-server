@@ -15,6 +15,7 @@ const start = async () => {
     {
       refreshTokenSecret: "refresh",
       accessTokenSecret: "access",
+      tempTokenSecret: "temp",
       db,
       enableLogs: true,
     },
@@ -25,6 +26,21 @@ const start = async () => {
 
   app.use(cors());
   app.use(express.json());
+  app.use((err, req, res, next) => {
+    if (err instanceof SyntaxError) {
+      res.status(400).json({
+        code: "invalid-json",
+        message: "Invalid JSON in request body.",
+      });
+    } else {
+      console.log(err);
+      res.status(500).json({
+        code: "internal-server-error",
+        message:
+          "Error occured on the server, please contact the administrators if the issue persists.",
+      });
+    }
+  });
   app.use("/auth", authRouter(auth));
 
   await app.listen(3000);

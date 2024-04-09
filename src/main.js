@@ -22,6 +22,7 @@ const initAuth = (
   {
     accessTokenSecret,
     refreshTokenSecret,
+    tempTokenSecret,
     db,
     enableLogs = false,
     refreshTokenExpiration = 8 * 24 * 60 * 60,
@@ -53,6 +54,7 @@ const initAuth = (
     secrets: {
       accessTokenSecret,
       refreshTokenSecret,
+      tempTokenSecret,
     },
     models: {
       User,

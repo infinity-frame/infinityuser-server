@@ -17,7 +17,7 @@ const getTwoFa = async function (auth, userId) {
         status: 404,
       };
     }
-    if (!userDoc.twofa) {
+    if (userDoc.twofa.length == 0) {
       return null;
     }
     return userDoc.twofa;

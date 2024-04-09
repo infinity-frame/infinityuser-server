@@ -22,10 +22,17 @@ const generateTOTP = async function (auth, userId, identifier) {
       status: 500,
     };
   }
-  if (!userId || !identifier) {
+  if (!userId) {
+    throw {
+      code: "auth/totp/no-user",
+      message: "No userId was defined.",
+      status: 500,
+    };
+  }
+  if (!identifier) {
     throw {
       code: "auth/no-params",
-      message: "UserId or identifier was not defined.",
+      message: "Identifier was not defined.",
       status: 400,
     };
   }

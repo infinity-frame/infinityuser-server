@@ -17,7 +17,7 @@ const generateBase32Secret = function (auth) {
 const generateTOTP = async function (auth, userId, identifier) {
   if (!auth.settings.twofa) {
     throw {
-      code: "auth/invalid-auth-object",
+      code: "auth/totp/invalid-auth-object",
       message: "Auth object twofa was not defined.",
       status: 500,
     };
@@ -48,11 +48,10 @@ const generateTOTP = async function (auth, userId, identifier) {
     }
   } catch (err) {
     throw {
-      code: err.code || "auth/failed-to-find",
+      code: err.code || "auth/totp/failed-to-find",
       message:
         err.message || "Failed to read the database for the provided userId.",
       status: err.status || 500,
-      raw: err,
     };
   }
   if (!!userDoc.twofa.totp) {
@@ -94,7 +93,6 @@ const generateTOTP = async function (auth, userId, identifier) {
       code: "auth/totp/failed-to-save",
       message: "The document couldn't be saved to the database.",
       status: 500,
-      raw: err,
     };
   }
   if (auth.settings.enableLogs) {
@@ -140,11 +138,10 @@ const validateTOTP = async function (auth, code, userId) {
     }
   } catch (err) {
     throw {
-      code: err.code || "auth/failed-to-find",
+      code: err.code || "auth/totp/failed-to-find",
       message:
         err.message || "Failed to read the database for the provided userId.",
       status: err.status || 500,
-      raw: err,
     };
   }
   if (!userDoc.twofa || !userDoc.twofa.totp || userDoc.twofa.totp.length == 0) {
@@ -152,18 +149,20 @@ const validateTOTP = async function (auth, code, userId) {
       code: err.code || "auth/totp-not-setup",
       message: err.message || "TOTP is not setup for the specified user.",
       status: err.status || 400,
-      raw: err,
     };
   }
   let valid = false;
-  for (const secret of userDoc.twofa.totp) {
+  for (const authenticator of userDoc.twofa.totp) {
     const totp = new OTPAuth.TOTP({
       algorithm: auth.settings.twofa.algorithm,
       digits: 6,
-      secret: secret,
+      secret: authenticator.secret,
     });
     let delta;
-    delta = totp.validate({ token: code, window: auth.settings.twofa.window });
+    delta = totp.validate({
+      token: code,
+      window: auth.settings.twofa.window,
+    });
     if (delta != null) {
       valid = true;
       if (auth.settings.enableLogs) {
@@ -232,11 +231,10 @@ const removeTOTP = async function (auth, userId, identifier) {
     await auth.models.User.updateOne({ _id: userId }, userDoc);
   } catch (err) {
     throw {
-      code: err.code || "auth/failed-to-find",
+      code: err.code || "auth/totp/failed-to-find",
       message:
         err.message || "Failed to read the database for the provided userId.",
       status: err.status || 500,
-      raw: err,
     };
   }
   if (auth.settings.enableLogs) {

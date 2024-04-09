@@ -9,7 +9,14 @@ const getTwoFa = async function (auth, userId) {
     };
   }
   try {
-    const userDoc = await auth.models.User.findById(userId);
+    const userDoc = await auth.models.User.findById(userId, "twofa");
+    if (!userDoc) {
+      throw {
+        code: "auth/not-found",
+        message: "Failed to find the user with the provided userId.",
+        status: 404,
+      };
+    }
     if (!userDoc.twofa) {
       return null;
     }
@@ -20,7 +27,6 @@ const getTwoFa = async function (auth, userId) {
       message:
         err.message || "Failed to read the database for the provided userId.",
       status: err.status || 500,
-      raw: err,
     };
   }
 };

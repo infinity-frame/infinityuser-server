@@ -24,14 +24,14 @@ const generateTOTP = async function (auth, userId, identifier) {
   }
   if (!userId || !identifier) {
     throw {
-      code: "auth/totp/no-params",
+      code: "auth/no-params",
       message: "UserId or identifier was not defined.",
       status: 400,
     };
   }
   if (!isValidObjectId(userId)) {
     throw {
-      code: "auth/totp/userid-invalid",
+      code: "auth/userid-invalid",
       message: "The provided userid was invalid.",
       status: 400,
     };
@@ -106,14 +106,14 @@ const generateTOTP = async function (auth, userId, identifier) {
 const validateTOTP = async function (auth, code, userId) {
   if (typeof auth.settings.twofa == "undefined") {
     throw {
-      code: "auth/invalid-auth-object",
+      code: "auth/totp/invalid-auth-object",
       message: "Auth object twofa was not defined.",
       status: 500,
     };
   }
   if (typeof code == "undefined" || typeof userId == "undefined") {
     throw {
-      code: "auth/totp/no-params",
+      code: "auth/no-params",
       message: "UserId or code was not defined.",
       status: 400,
     };
@@ -180,7 +180,7 @@ const validateTOTP = async function (auth, code, userId) {
 const removeTOTP = async function (auth, userId, identifier) {
   if (!auth.settings.twofa) {
     throw {
-      code: "auth/invalid-auth-object",
+      code: "auth/totp/invalid-auth-object",
       message: "Auth object twofa was not defined.",
       status: 500,
     };
@@ -190,14 +190,14 @@ const removeTOTP = async function (auth, userId, identifier) {
   }
   if (!userId || !identifier) {
     throw {
-      code: "auth/totp/no-params",
+      code: "auth/no-params",
       message: "UserId or identifier was not defined.",
       status: 400,
     };
   }
   if (!isValidObjectId(userId)) {
     throw {
-      code: "auth/totp/userid-invalid",
+      code: "auth/userid-invalid",
       message: "The provided userid was invalid.",
       status: 400,
     };
@@ -242,6 +242,7 @@ const removeTOTP = async function (auth, userId, identifier) {
   if (auth.settings.enableLogs) {
     console.info(`TOTP ${identifier} was removed from user ${userId}`);
   }
+  return true;
 };
 
 module.exports = {

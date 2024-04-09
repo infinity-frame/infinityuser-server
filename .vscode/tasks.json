@@ -1,0 +1,16 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "type": "npm",
+      "script": "startTest",
+      "problemMatcher": [],
+      "label": "npm: startTest",
+      "detail": "cd test && node main.js",
+      "group": {
+        "kind": "test",
+        "isDefault": true
+      }
+    }
+  ]
+}

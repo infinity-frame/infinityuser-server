@@ -20,6 +20,21 @@ const userSchema = new mongoose.Schema(
       of: String,
       required: false,
     },
+    twofa: {
+      totp: [
+        {
+          identifier: {
+            required: true,
+            type: String,
+          },
+          secret: {
+            required: true,
+            type: String,
+          },
+          _id: false,
+        },
+      ],
+    },
   },
   { timestamps: true }
 );

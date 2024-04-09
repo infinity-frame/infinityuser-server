@@ -16,20 +16,34 @@ const {
 const { verifyAccessToken, getNewTokens } = require("./tokens");
 const authRouter = require("./router");
 const { authMiddleware, passwordMiddleware } = require("./middlewares/auth");
+const { generateTOTP, validateTOTP } = require("./otp");
 
-const initAuth = ({
-  accessTokenSecret,
-  refreshTokenSecret,
-  db,
-  enableLogs = false,
-  refreshTokenExpiration = 8 * 24 * 60 * 60,
-  accessTokenExpiration = 15 * 60,
-}) => {
+const initAuth = (
+  {
+    accessTokenSecret,
+    refreshTokenSecret,
+    db,
+    enableLogs = false,
+    refreshTokenExpiration = 8 * 24 * 60 * 60,
+    accessTokenExpiration = 15 * 60,
+  },
+  twofaCustomSettings
+) => {
   const User = db.model("User", userSchema);
   const RefreshToken = db.model(
     "RefreshToken",
     refreshTokenSchema(refreshTokenExpiration)
   );
+
+  let twofa;
+  if (twofaCustomSettings) {
+    twofa = {
+      keylength: twofaCustomSettings.keylength || 32,
+      issuer: twofaCustomSettings.issuer,
+      algorithm: twofaCustomSettings.algorithm || "SHA256",
+      window: twofaCustomSettings.window || 1,
+    };
+  }
 
   if (enableLogs) {
     console.log("Auth initialized");
@@ -48,6 +62,7 @@ const initAuth = ({
       enableLogs,
       refreshTokenExpiration,
       accessTokenExpiration,
+      twofa,
     },
   };
 };
@@ -70,4 +85,6 @@ module.exports = {
   suspendUser,
   unsuspendUser,
   changePassword,
+  generateTOTP,
+  validateTOTP,
 };

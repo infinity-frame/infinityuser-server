@@ -1,0 +1,18 @@
+[{
+  "_id": {
+    "$oid": "660ec4dbda57872778540eb3"
+  },
+  "email": "example@example.com",
+  "passwordHash": "$2b$10$elfShtTVAXyZf9qwfCY46Odsd6cNn8Cyc9CgDSqpWJyoErhJP28YK",
+  "suspended": false,
+  "twofa": {
+    "totp": []
+  },
+  "createdAt": {
+    "$date": "2024-04-04T15:18:51.262Z"
+  },
+  "updatedAt": {
+    "$date": "2024-04-04T15:18:51.262Z"
+  },
+  "__v": 0
+}]

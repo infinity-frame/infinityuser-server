@@ -7,9 +7,13 @@ const {
   deleteUser,
   updateEmail,
   changePassword,
+  getUser,
+  updateUserData,
 } = require("./user");
 const { getNewTokens } = require("./tokens");
 const { authMiddleware, passwordMiddleware } = require("./middlewares/auth");
+const { generateTOTP, validateTOTP, removeTOTP } = require("./otp.js");
+const { getTwoFa } = require("./twofactor.js");
 
 const authRouter = (auth) => {
   router.post("/register", async (req, res) => {
@@ -101,6 +105,121 @@ const authRouter = (auth) => {
       }
     }
   );
+
+  if (auth.settings.twofa != null) {
+    router.get("/two-fa/:userId", async function (req, res) {
+      try {
+        const twofa = await getTwoFa(auth, req.params.userId);
+        res.send(twofa);
+      } catch (err) {
+        if (typeof err.status == "undefined" || err.status == 500) {
+          res.status(500).json({
+            code: "internal-server-error",
+            message:
+              "An internal server error occured, please contact the administrators.",
+          });
+          console.error(err);
+        } else {
+          res.status(err.status).json(err);
+        }
+      }
+    });
+    router.post(
+      "/two-fa/totp",
+      authMiddleware(auth),
+      async function (req, res) {
+        try {
+          const totp = await generateTOTP(
+            auth,
+            req.user._id,
+            req.body.identifier
+          );
+          res.json({
+            code: "generation-success",
+            message: "TOTP generated successfully.",
+            url: totp.url,
+          });
+        } catch (err) {
+          if (typeof err.status == "undefined" || err.status == 500) {
+            res.status(500).json({
+              code: "internal-server-error",
+              message:
+                "An internal server error occured, please contact the administrators.",
+            });
+            console.error(err);
+          } else {
+            res.status(err.status).json(err);
+          }
+        }
+      }
+    );
+    router.patch(
+      "/two-fa/totp/:code",
+      authMiddleware(auth),
+      async function (req, res) {
+        if (!req.params.code) {
+          res.status(400).json({
+            code: "auth/missing-totp-code",
+            message: "Missing the TOTP code to validate.",
+          });
+          return;
+        }
+        try {
+          const totp = await validateTOTP(auth, req.params.code, req.user._id);
+          if (totp) {
+            res.json({
+              code: "validation-success",
+              message: "TOTP code is valid.",
+            });
+          } else {
+            res.status(403).json({
+              code: "invalid-totp",
+              message: "The provided TOTP code is invalid for this user.",
+            });
+          }
+        } catch (err) {
+          if (typeof err.status == "undefined" || err.status == 500) {
+            res.status(500).json({
+              code: "internal-server-error",
+              message:
+                "An internal server error occured, please contact the administrators.",
+            });
+            console.error(err);
+          } else {
+            res.status(err.status).json(err);
+          }
+        }
+      }
+    );
+    router.delete(
+      "/two-fa/totp/:identifier",
+      authMiddleware(auth),
+      async function (req, res) {
+        try {
+          const twofa = await removeTOTP(
+            auth,
+            req.user._id,
+            req.params.identifier
+          );
+          res.json({
+            code: "totp-removed",
+            message: "TOTP has been removed successfully.",
+          });
+        } catch (err) {
+          if (typeof err.status == "undefined" || err.status == 500) {
+            res.status(500).json({
+              code: "internal-server-error",
+              message:
+                "An internal server error occured, please contact the administrators.",
+            });
+            console.error(err);
+          } else {
+            res.status(err.status).json(err);
+          }
+        }
+      }
+    );
+  }
 
   return router;
 };

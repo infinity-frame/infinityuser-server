@@ -6,6 +6,20 @@ const {
   createNewTempToken,
 } = require("./tokens");
 
+const parseSafe = function (userDoc) {
+  const userDocSafe = userDoc.toObject();
+  delete userDocSafe.passwordHash;
+  delete userDocSafe.createdAt;
+  delete userDocSafe.updatedAt;
+  delete userDocSafe.__v;
+  if (userDocSafe.twofa && userDocSafe.twofa.totp) {
+    for (const authenticator of userDocSafe.twofa.totp) {
+      delete authenticator.secret;
+    }
+  }
+  return userDocSafe;
+};
+
 const createUser = async (auth, email, password, data) => {
   if (auth.settings.enableLogs) {
     console.log(`Creating user with email ${email}`);
@@ -73,11 +87,8 @@ const createUser = async (auth, email, password, data) => {
   const accessToken = await generateAccessToken(auth, userDoc._id);
   const refreshToken = await generateRefreshToken(auth, userDoc._id);
 
-  const userDocWithoutPassword = userDoc.toObject();
-  delete userDocWithoutPassword.passwordHash;
-
   return {
-    user: userDocWithoutPassword,
+    user: parseSafe(userDoc),
     accessToken,
     refreshToken,
   };
@@ -133,28 +144,19 @@ const login = async (auth, email, password) => {
       };
     }
 
-    const userDocWithoutPassword = userDoc.toObject();
-    delete userDocWithoutPassword.passwordHash;
-
-    console.log(userDoc);
-    if (!!userDocWithoutPassword.twofa) {
-      if (userDocWithoutPassword.twofa.totp) {
-        for (const authenticator of userDocWithoutPassword.twofa.totp) {
-          delete authenticator.secret;
-        }
-      }
+    if (userDoc.toObject().twofa) {
       const temptoken = await createNewTempToken(
         auth,
         userDoc._id,
-        userDocWithoutPassword.twofa.totp
+        userDoc.twofa.totp
       );
-      return { user: userDocWithoutPassword, temptoken };
+      return { user: parseSafe(userDoc), temptoken };
     } else {
       const accessToken = await generateAccessToken(auth, userDoc._id);
       const refreshToken = await generateRefreshToken(auth, userDoc._id);
 
       return {
-        user: userDocWithoutPassword,
+        user: parseSafe(userDoc),
         accessToken,
         refreshToken,
       };
@@ -257,7 +259,7 @@ const updateEmail = async (auth, userId, newEmail) => {
       console.log(`Email for user with id ${userId} updated`);
     }
 
-    return userDoc;
+    return parseSafe(userDoc);
   } catch (error) {
     throw {
       code: error.code || "auth/update-email-error",
@@ -332,7 +334,7 @@ const getUser = async (auth, userId) => {
       console.log(`User with id ${userId} found`);
     }
 
-    return userDoc;
+    return parseSafe(userDoc);
   } catch (error) {
     throw {
       code: error.code || "auth/get-user-error",
@@ -374,7 +376,7 @@ const updateUserData = async (auth, userId, data) => {
       console.log(`User with id ${userId} updated`);
     }
 
-    return userDoc;
+    return parseSafe(userDoc);
   } catch (error) {
     throw {
       code: error.code || "auth/update-user-error",
@@ -416,7 +418,7 @@ const suspendUser = async (auth, userId) => {
       console.log(`User with id ${userId} suspended`);
     }
 
-    return userDoc;
+    return parseSafe(userDoc);
   } catch (error) {
     throw {
       code: error.code || "auth/suspend-user-error",
@@ -458,7 +460,7 @@ const unsuspendUser = async (auth, userId) => {
       console.log(`User with id ${userId} unsuspended`);
     }
 
-    return userDoc;
+    return parseSafe(userDoc);
   } catch (error) {
     throw {
       code: error.code || "auth/unsuspend-user-error",
@@ -513,7 +515,7 @@ const changePassword = async (auth, userId, newPassword) => {
       console.log(`Password for user with id ${userId} changed`);
     }
 
-    return userDoc;
+    return parseSafe(userDoc);
   } catch (error) {
     throw {
       code: error.code || "auth/change-password-error",

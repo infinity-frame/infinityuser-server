@@ -136,7 +136,8 @@ const login = async (auth, email, password) => {
     const userDocWithoutPassword = userDoc.toObject();
     delete userDocWithoutPassword.passwordHash;
 
-    if (userDocWithoutPassword.twofa) {
+    console.log(userDoc);
+    if (!!userDocWithoutPassword.twofa) {
       if (userDocWithoutPassword.twofa.totp) {
         for (const authenticator of userDocWithoutPassword.twofa.totp) {
           delete authenticator.secret;

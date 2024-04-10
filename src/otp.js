@@ -78,7 +78,11 @@ const generateTOTP = async function (auth, userId, identifier) {
     }
   }
   const secret = generateBase32Secret(auth);
+  if (!Array.isArray(userDoc.twofa.totp)) {
+    userDoc.twofa.totp = [];
+  }
   userDoc.twofa.totp.push({ identifier: identifier, secret: secret });
+
   if (auth.settings.enableLogs) {
     console.info("Generating TOTP auth object");
   }
@@ -235,7 +239,21 @@ const removeTOTP = async function (auth, userId, identifier) {
       };
     }
     userDoc.twofa.totp.splice(index, 1);
-    await auth.models.User.updateOne({ _id: userId }, userDoc);
+    if (
+      userDoc.twofa.totp.length == 0 &&
+      Object.keys(userDoc.twofa).length == 1
+    ) {
+      userDoc.twofa = null;
+      console.log(userDoc);
+      await auth.models.User.updateOne({ _id: userId }, userDoc);
+    } else if (userDoc.twofa.totp.length == 0) {
+      await auth.models.User.updateOne(
+        { _id: userId },
+        { $unset: { "twofa.totp": "" } }
+      );
+    } else {
+      await auth.models.User.updateOne({ _id: userId }, userDoc);
+    }
   } catch (err) {
     throw {
       code: err.code || "auth/totp/failed-to-find",

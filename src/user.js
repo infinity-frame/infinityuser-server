@@ -161,9 +161,9 @@ const login = async (auth, email, password) => {
     }
   } catch (error) {
     throw {
-      code: "auth/login-error",
-      message: "Failed to login",
-      status: 500,
+      code: error.code || "auth/login-error",
+      message: error.message || "Failed to login",
+      status: error.status || 500,
     };
   }
 };
@@ -260,9 +260,9 @@ const updateEmail = async (auth, userId, newEmail) => {
     return userDoc;
   } catch (error) {
     throw {
-      code: "auth/update-email-error",
-      message: "Failed to update email",
-      status: 500,
+      code: error.code || "auth/update-email-error",
+      message: error.message || "Failed to update email",
+      status: error.status || 500,
     };
   }
 };
@@ -295,9 +295,9 @@ const isPasswordCorrect = async (auth, userId, password) => {
     return passwordMatch;
   } catch (error) {
     throw {
-      code: "auth/check-password-error",
-      message: "Failed to check password",
-      status: 500,
+      code: error.code || "auth/check-password-error",
+      message: error.message || "Failed to check password",
+      status: error.status || 500,
     };
   }
 };

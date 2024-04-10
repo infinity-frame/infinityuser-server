@@ -36,7 +36,7 @@ const initAuth = (
     refreshTokenSchema(refreshTokenExpiration)
   );
 
-  let twofa;
+  let twofa = null;
   if (twofaCustomSettings) {
     twofa = {
       keylength: twofaCustomSettings.keylength || 32,

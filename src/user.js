@@ -537,4 +537,5 @@ module.exports = {
   suspendUser,
   unsuspendUser,
   changePassword,
+  parseSafe,
 };

@@ -1,36 +1,48 @@
 const { isValidObjectId } = require("mongoose");
+const { validateTOTP } = require("./otp");
 
-const getTwoFa = async function (auth, userId) {
-  if (!userId || !isValidObjectId(userId)) {
+const verifyTwoFa = async function (auth, method, userId, code) {
+  if (auth.settings.twofa == null) {
     throw {
-      code: "auth/userid-invalid",
-      message: "The provided userid was invalid.",
+      code: "auth/two-fa/missing-twofa",
+      message: "Twofa is not configured.",
+      status: 500,
+    };
+  }
+  if (!method) {
+    throw {
+      code: "auth/missing-method",
+      message: "Missing the method to authenticate by.",
       status: 400,
     };
   }
-  try {
-    const userDoc = await auth.models.User.findById(userId, "twofa");
-    if (!userDoc) {
-      throw {
-        code: "auth/not-found",
-        message: "Failed to find the user with the provided userId.",
-        status: 404,
-      };
-    }
-    if (userDoc.twofa.length == 0) {
-      return null;
-    }
-    return userDoc.twofa;
-  } catch (err) {
+  if (!code) {
     throw {
-      code: err.code || "auth/failed-to-find",
-      message:
-        err.message || "Failed to read the database for the provided userId.",
-      status: err.status || 500,
+      code: "auth/missing-code",
+      message: "Missing code to verify.",
+      status: 400,
     };
+  }
+  let verified = false;
+  switch (method) {
+    case "totp":
+      if (await validateTOTP(auth, String(code), userId)) {
+        break;
+      }
+      throw {
+        code: "auth/invalid-totp",
+        message: "The TOTP code was not found in the specified window.",
+        status: 403,
+      };
+    default:
+      throw {
+        code: "invalid-method",
+        message: "The verification method is invalid.",
+        status: 400,
+      };
   }
 };
 
 module.exports = {
-  getTwoFa,
+  verifyTwoFa,
 };

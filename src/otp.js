@@ -139,7 +139,7 @@ const validateTOTP = async function (auth, code, userId) {
   }
   let userDoc;
   try {
-    userDoc = await auth.models.User.findById(userId);
+    userDoc = await auth.models.User.findById(userId, "twofa");
     if (!userDoc) {
       throw {
         code: "auth/user-not-found",
@@ -155,7 +155,7 @@ const validateTOTP = async function (auth, code, userId) {
       status: err.status || 500,
     };
   }
-  if (!userDoc.twofa || !userDoc.twofa.totp || userDoc.twofa.totp.length == 0) {
+  if (!userDoc.twofa || !userDoc.twofa.totp) {
     throw {
       code: err.code || "auth/totp-not-setup",
       message: err.message || "TOTP is not setup for the specified user.",

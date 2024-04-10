@@ -9,6 +9,7 @@ const {
   changePassword,
   getUser,
   updateUserData,
+  parseSafe,
 } = require("./user");
 const {
   getNewTokens,
@@ -21,7 +22,7 @@ const {
   tempAuthMiddleware,
 } = require("./middlewares/auth");
 const { generateTOTP, validateTOTP, removeTOTP } = require("./otp.js");
-const { getTwoFa } = require("./twofactor.js");
+const { verifyTwoFa } = require("./twofactor.js");
 
 const authRouter = (auth) => {
   router.post("/register", async (req, res) => {
@@ -114,45 +115,21 @@ const authRouter = (auth) => {
     }
   );
 
-  if (auth.settings.twofa != null) {
+  if (auth.settings.twofa) {
     router.post(
       "/two-fa/verify/:method",
       tempAuthMiddleware(auth),
       async function (req, res) {
         try {
-          if (req.params.method == "totp") {
-            if (!req.body.code) {
-              res.status(400).json({
-                code: "auth/missing-totp-code",
-                message: "Missing the TOTP code to validate.",
-              });
-              return;
-            }
-            const totp = await validateTOTP(auth, req.body.code, req.user._id);
-            if (totp) {
-              const accessToken = await generateAccessToken(auth, req.user._id);
-              const refreshToken = await generateRefreshToken(
-                auth,
-                req.user._id
-              );
-              res.json({
-                user: { _id: req.user._id },
-                accessToken,
-                refreshToken,
-              });
-            } else {
-              res.status(403).json({
-                code: "invalid-totp",
-                message: "The provided TOTP code is invalid for this user.",
-              });
-            }
-          } else {
-            res.status(400).json({
-              code: "invalid-method",
-              message:
-                "The provided method of two factor authentication was invalid.",
-            });
-          }
+          await verifyTwoFa(
+            auth,
+            req.params.method,
+            req.user._id,
+            req.body.code
+          );
+          const refreshToken = await generateRefreshToken(auth, req.user._id);
+          const accessToken = await generateAccessToken(auth, req.user._id);
+          res.json({ _id: req.user._id, refreshToken, accessToken });
         } catch (err) {
           if (typeof err.status == "undefined" || err.status == 500) {
             res.status(500).json({

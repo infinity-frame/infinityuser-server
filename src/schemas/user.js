@@ -34,6 +34,7 @@ const userSchema = new mongoose.Schema(
           _id: false,
         },
       ],
+      required: false,
     },
   },
   { timestamps: true }

@@ -1,5 +1,5 @@
 const { isValidObjectId } = require("mongoose");
-const { validateTOTP } = require("./otp");
+const { validateTOTP } = require("./totp");
 
 const verifyTwoFa = async function (auth, method, userId, code) {
   if (auth.settings.twofa == null) {

@@ -21,8 +21,8 @@ const {
   passwordMiddleware,
   tempAuthMiddleware,
 } = require("./middlewares/auth");
-const { generateTOTP, validateTOTP, removeTOTP } = require("./otp.js");
-const { verifyTwoFa } = require("./twofactor.js");
+const { generateTOTP, validateTOTP, removeTOTP } = require("./twofa/totp.js");
+const { verifyTwoFa } = require("./twofa/twofactor.js");
 
 const authRouter = (auth) => {
   router.post("/register", async (req, res) => {

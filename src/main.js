@@ -16,7 +16,8 @@ const {
 const { verifyAccessToken, getNewTokens } = require("./tokens");
 const authRouter = require("./router");
 const { authMiddleware, passwordMiddleware } = require("./middlewares/auth");
-const { generateTOTP, validateTOTP } = require("./otp");
+const { generateTOTP, validateTOTP } = require("./twofa/totp");
+const { verifyTwoFa } = require("./twofa/twofactor");
 
 const initAuth = ({
   accessTokenSecret,
@@ -93,4 +94,5 @@ module.exports = {
   changePassword,
   generateTOTP,
   validateTOTP,
+  verifyTwoFa,
 };

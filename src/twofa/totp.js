@@ -238,7 +238,7 @@ const removeTOTP = async function (auth, userId, identifier) {
     if (auth.settings.enableLogs) {
       console.info(`Identifier ${identifier} found on user ${userId}`);
     }
-    if (index == null) {
+    if (!index) {
       throw {
         code: "auth/identifier-not-found",
         message: "Authenticator with the provided identifier not found",

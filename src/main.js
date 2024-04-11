@@ -18,18 +18,16 @@ const authRouter = require("./router");
 const { authMiddleware, passwordMiddleware } = require("./middlewares/auth");
 const { generateTOTP, validateTOTP } = require("./otp");
 
-const initAuth = (
-  {
-    accessTokenSecret,
-    refreshTokenSecret,
-    tempTokenSecret,
-    db,
-    enableLogs = false,
-    refreshTokenExpiration = 8 * 24 * 60 * 60,
-    accessTokenExpiration = 15 * 60,
-  },
-  twofaCustomSettings
-) => {
+const initAuth = ({
+  accessTokenSecret,
+  refreshTokenSecret,
+  tempTokenSecret,
+  db,
+  enableLogs = false,
+  refreshTokenExpiration = 8 * 24 * 60 * 60,
+  accessTokenExpiration = 15 * 60,
+  twofaSettings = null,
+}) => {
   const User = db.model("User", userSchema);
   const RefreshToken = db.model(
     "RefreshToken",
@@ -37,13 +35,19 @@ const initAuth = (
   );
 
   let twofa = null;
-  if (twofaCustomSettings) {
-    twofa = {
-      keylength: twofaCustomSettings.keylength || 32,
-      issuer: twofaCustomSettings.issuer,
-      algorithm: twofaCustomSettings.algorithm || "SHA256",
-      window: twofaCustomSettings.window || 1,
-    };
+  if (twofaSettings) {
+    if (enableLogs) {
+      console.info("Initializing twofa");
+    }
+    twofa = {};
+    if (twofaSettings.totpSettings) {
+      twofa.totp = {
+        issuer: twofaSettings.totpSettings.issuer,
+        keylength: twofaSettings.totpSettings.keylength || 32,
+        algorithm: twofaSettings.totpSettings.algorithm || "SHA256",
+        window: twofaSettings.totpSettings.window || 1,
+      };
+    }
   }
 
   if (enableLogs) {

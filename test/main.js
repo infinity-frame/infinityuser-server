@@ -11,18 +11,16 @@ const start = async () => {
   const db = mongoose.connection;
   console.log(`Connected to database ${db.db.databaseName}`);
 
-  const auth = initAuth(
-    {
-      refreshTokenSecret: "refresh",
-      accessTokenSecret: "access",
-      tempTokenSecret: "temp",
-      db,
-      enableLogs: true,
+  const auth = initAuth({
+    refreshTokenSecret: "refresh",
+    accessTokenSecret: "access",
+    tempTokenSecret: "temp",
+    db,
+    enableLogs: true,
+    twofaSettings: {
+      totpSettings: { issuer: "InfinityFrame" },
     },
-    {
-      issuer: "InfinityFrame",
-    }
-  );
+  });
 
   app.use(cors());
   app.use(express.json());

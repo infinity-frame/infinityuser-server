@@ -6,16 +6,16 @@ const { isValidObjectId } = require("mongoose");
 const generateBase32Secret = function (auth) {
   if (auth.settings.enableLogs) {
     console.info(
-      `Generating a base32 secret for TOTP of length ${auth.settings.twofa.keylength}`
+      `Generating a base32 secret for TOTP of length ${auth.settings.twofa.totp.keylength}`
     );
   }
-  const buffer = crypto.randomBytes(auth.settings.twofa.keylength);
+  const buffer = crypto.randomBytes(auth.settings.twofa.totp.keylength);
   const secret = base32.encode(buffer).replace(/=/g, "");
   console.info("Generated TOTP key successfuly");
   return secret;
 };
 const generateTOTP = async function (auth, userId, identifier) {
-  if (!auth.settings.twofa) {
+  if (!auth.settings.twofa || !auth.settings.twofa.totp) {
     throw {
       code: "auth/totp/invalid-auth-object",
       message: "Auth object twofa was not defined.",
@@ -61,7 +61,7 @@ const generateTOTP = async function (auth, userId, identifier) {
       status: err.status || 500,
     };
   }
-  if (!!userDoc.twofa.totp) {
+  if (userDoc.twofa.totp) {
     let duplicate = false;
     for (const authenticator of userDoc.twofa.totp) {
       if (authenticator.identifier == identifier) {
@@ -73,7 +73,7 @@ const generateTOTP = async function (auth, userId, identifier) {
       throw {
         code: "auth/identifier-exists",
         message: "A TOTP with this identifier already exists.",
-        status: 400,
+        status: 409,
       };
     }
   }
@@ -87,9 +87,9 @@ const generateTOTP = async function (auth, userId, identifier) {
     console.info("Generating TOTP auth object");
   }
   const totp = new OTPAuth.TOTP({
-    issuer: auth.settings.twofa.issuer,
+    issuer: auth.settings.twofa.totp.issuer,
     label: userDoc.email,
-    algorithm: auth.settings.twofa.algorithm,
+    algorithm: auth.settings.twofa.totp.algorithm,
     digits: 6,
     secret: secret,
   });
@@ -113,14 +113,14 @@ const generateTOTP = async function (auth, userId, identifier) {
 };
 
 const validateTOTP = async function (auth, code, userId) {
-  if (typeof auth.settings.twofa == "undefined") {
+  if (!auth.settings.twofa || !auth.settings.twofa.totp) {
     throw {
       code: "auth/totp/invalid-auth-object",
       message: "Auth object twofa was not defined.",
       status: 500,
     };
   }
-  if (typeof code == "undefined" || typeof userId == "undefined") {
+  if (!code || !userId) {
     throw {
       code: "auth/no-params",
       message: "UserId or code was not defined.",
@@ -165,14 +165,14 @@ const validateTOTP = async function (auth, code, userId) {
   let valid = false;
   for (const authenticator of userDoc.twofa.totp) {
     const totp = new OTPAuth.TOTP({
-      algorithm: auth.settings.twofa.algorithm,
+      algorithm: auth.settings.twofa.totp.algorithm,
       digits: 6,
       secret: authenticator.secret,
     });
     let delta;
     delta = totp.validate({
       token: code,
-      window: auth.settings.twofa.window,
+      window: auth.settings.twofa.totp.window,
     });
     if (delta != null) {
       valid = true;
@@ -184,7 +184,14 @@ const validateTOTP = async function (auth, code, userId) {
       break;
     }
   }
-  return valid;
+  if (!valid) {
+    throw {
+      code: "auth/invalid-totp",
+      message: "The TOTP was not found in the specified window.",
+      status: 403,
+    };
+  }
+  return true;
 };
 
 const removeTOTP = async function (auth, userId, identifier) {
@@ -244,7 +251,6 @@ const removeTOTP = async function (auth, userId, identifier) {
       Object.keys(userDoc.twofa).length == 1
     ) {
       userDoc.twofa = null;
-      console.log(userDoc);
       await auth.models.User.updateOne({ _id: userId }, userDoc);
     } else if (userDoc.twofa.totp.length == 0) {
       await auth.models.User.updateOne(

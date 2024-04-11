@@ -26,14 +26,18 @@ const verifyTwoFa = async function (auth, method, userId, code) {
   let verified = false;
   switch (method) {
     case "totp":
-      if (await validateTOTP(auth, String(code), userId)) {
-        break;
+      try {
+        await validateTOTP(auth, String(code), userId);
+      } catch (err) {
+        throw {
+          code: err.code || "auth/internal-server-error",
+          message:
+            err.message ||
+            "Unknown internal server error occured, please contact the administrators.",
+          status: err.status || 500,
+        };
       }
-      throw {
-        code: "auth/invalid-totp",
-        message: "The TOTP code was not found in the specified window.",
-        status: 403,
-      };
+      break;
     default:
       throw {
         code: "invalid-method",

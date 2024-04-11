@@ -7,9 +7,6 @@ const {
   deleteUser,
   updateEmail,
   changePassword,
-  getUser,
-  updateUserData,
-  parseSafe,
 } = require("./user");
 const {
   getNewTokens,
@@ -21,7 +18,7 @@ const {
   passwordMiddleware,
   tempAuthMiddleware,
 } = require("./middlewares/auth");
-const { generateTOTP, validateTOTP, removeTOTP } = require("./twofa/totp.js");
+const { generateTOTP, removeTOTP } = require("./twofa/totp.js");
 const { verifyTwoFa } = require("./twofa/twofactor.js");
 
 const authRouter = (auth) => {

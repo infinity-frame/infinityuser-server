@@ -4,7 +4,7 @@ const { isPasswordCorrect } = require("../user");
 const authMiddleware = (auth) => {
   return async (req, res, next) => {
     const authHeader = req.headers.authorization;
-    const accessToken = authHeader.split(" ")[1];
+    const accessToken = authHeader && authHeader.split(" ")[1];
 
     if (!accessToken) {
       res.status(401).json({ message: "Missing access token" });

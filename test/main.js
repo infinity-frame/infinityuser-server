@@ -1,4 +1,4 @@
-const { initAuth, authRouter } = require("../src/main");
+const { initAuth, authRouter, authMiddleware } = require("../src/main");
 const mongoose = require("mongoose");
 const express = require("express");
 const { getUser } = require("../src/main.js");
@@ -40,6 +40,12 @@ const start = async () => {
     }
   });
   app.use("/auth", authRouter(auth));
+  app.get("/test", authMiddleware(auth), function (req, res) {
+    res.json({
+      code: "success",
+      message: "Authentication successful",
+    });
+  });
 
   await app.listen(3000);
   console.log("App listening on port 3000");

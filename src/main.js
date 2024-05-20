@@ -13,7 +13,7 @@ const {
   unsuspendUser,
   changePassword,
 } = require("./user");
-const { verifyAccessToken, getNewTokens } = require("./tokens");
+const { verifyAccessToken, verifyRefreshToken, getNewTokens } = require("./tokens");
 const authRouter = require("./router");
 const { authMiddleware, passwordMiddleware } = require("./middlewares/auth");
 const { generateTOTP, validateTOTP } = require("./twofa/totp");
@@ -78,6 +78,7 @@ module.exports = {
   initAuth,
   createUser,
   verifyAccessToken,
+  verifyRefreshToken,
   getNewTokens,
   login,
   logout,

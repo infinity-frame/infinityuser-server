@@ -1,7 +1,7 @@
 const { initAuth, authRouter, authMiddleware } = require("../src/main");
 const mongoose = require("mongoose");
 const express = require("express");
-const { getUser } = require("../src/main.js");
+const { getUser, verifyRefreshToken } = require("../src/main.js");
 const cors = require("cors");
 const app = express();
 require("dotenv").config();
@@ -45,6 +45,24 @@ const start = async () => {
       code: "success",
       message: "Authentication successful",
     });
+  });
+  app.get("/verify-refresh-token", async (req, res) => {
+    const token = req.headers["authorization"];
+    if (!token) {
+      return res.status(400).json({
+        code: "missing-token",
+        message: "No token provided in Authorization header.",
+      });
+    }
+    try {
+      const result = await verifyRefreshToken(auth, token);
+      res.json(result);
+    } catch (err) {
+      res.status(err.status || 500).json({
+        code: err.code || "internal-server-error",
+        message: err.message || "Error occured on the server.",
+      }); 
+    }
   });
 
   await app.listen(3000);

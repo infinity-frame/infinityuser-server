@@ -4,6 +4,7 @@ const {
   generateRefreshToken,
   verifyRefreshToken,
   createNewTempToken,
+  removeAllRefreshTokens,
 } = require("./tokens");
 
 const parseSafe = function (userDoc) {
@@ -511,11 +512,11 @@ const changePassword = async (auth, userId, newPassword) => {
       };
     }
 
+    await removeAllRefreshTokens(auth, userId);
+
     if (auth.settings.enableLogs) {
       console.log(`Password for user with id ${userId} changed`);
     }
-
-    return parseSafe(userDoc);
   } catch (error) {
     throw {
       code: error.code || "auth/change-password-error",

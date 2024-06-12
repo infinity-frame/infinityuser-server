@@ -336,6 +336,10 @@ const verifyTempToken = async (auth, token) => {
   }
 };
 
+const removeAllRefreshTokens = async (auth, userId) => {
+  await auth.models.RefreshToken.deleteMany({ userId });
+};
+
 module.exports = {
   verifyAccessToken,
   verifyRefreshToken,
@@ -344,4 +348,5 @@ module.exports = {
   generateRefreshToken,
   createNewTempToken,
   verifyTempToken,
+  removeAllRefreshTokens,
 };

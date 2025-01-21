@@ -1,7 +1,7 @@
 const { initAuth, authRouter, authMiddleware } = require("../src/main");
 const mongoose = require("mongoose");
 const express = require("express");
-const { getUser, verifyRefreshToken } = require("../src/main.js");
+const { getUser, verifyRefreshToken, createUser } = require("../src/main.js");
 const cors = require("cors");
 const app = express();
 require("dotenv").config();
@@ -61,11 +61,11 @@ const start = async () => {
       res.status(err.status || 500).json({
         code: err.code || "internal-server-error",
         message: err.message || "Error occured on the server.",
-      }); 
+      });
     }
   });
 
-  await app.listen(3000);
+  app.listen(3000);
   console.log("App listening on port 3000");
 };
 
